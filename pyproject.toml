@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "B", "C4", "UP", "TID", "SIM", "PTH", "NPY", "PERF", "PIE", "RUF100"]
+ignore = [
+    "E501",
+    "E402", # notebooks import where it reads best
+    "B018", # bare expressions render objects in notebooks
+]

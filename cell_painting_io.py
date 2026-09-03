@@ -106,6 +106,11 @@ def drop_incomplete_features(adata: ad.AnnData, *, max_missing: float = 0.0) -> 
     return adata[:, missing <= max_missing].copy()
 
 
+def drop_incomplete_wells(adata: ad.AnnData, *, max_missing: float = 0.0) -> ad.AnnData:
+    missing = (~np.isfinite(adata.X)).mean(axis=1)
+    return adata[missing <= max_missing].copy()
+
+
 def drop_extreme_features(adata: ad.AnnData, *, max_abs: float = 1e6) -> ad.AnnData:
     largest = np.nanmax(np.abs(adata.X), axis=0)
     return adata[:, largest <= max_abs].copy()

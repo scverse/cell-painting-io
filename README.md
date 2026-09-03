@@ -80,6 +80,17 @@ One notebook per remaining dataset, each following the same shape: read, annotat
 | `chroma_to_anndata.ipynb` | Alternative dyes (`cpg0029`) | 767 x 675 |
 | `amish_to_anndata.ipynb` | Amish cohort (`cpg0047`) | 468 x 790 |
 | `neuropainting_to_anndata.ipynb` | Brain cell types (`cpg0038`) | 188 x 563 |
+| `wawer_to_anndata.ipynb` | CDRP bioactives (`cpg0012`) | 153,022 x 781 |
+| `periscope_to_anndata.ipynb` | PERISCOPE pooled screen (`cpg0021`), genes not wells | 20,384 x 3,640 |
+| `molglue_to_anndata.ipynb` | Molecular glues (`cpg0009`), from `backend/` | 1,920 x 7,587 |
+| `cmqtl_to_anndata.ipynb` | iPSC lines (`cpg0022`) | 4,148 x 1,327 |
+| `cellpainting_protocol_to_anndata.ipynb` | Protocol variants (`cpg0001`) | 5,794 x 187 |
+| `jump_scope_to_anndata.ipynb` | JUMP-SCOPE microscopes (`cpg0002`) | 1,529 x 819 |
+| `kelley_to_anndata.ipynb` | Bortezomib resistance (`cpg0028`) | 1,920 x 221 |
+| `caie_to_anndata.ipynb` | Caie drug response (`cpg0010`) | 632 x 516 |
+| `garcia_fossa_live_to_anndata.ipynb` | Live Cell Painting (`cpg0039`) | 536 x 82 |
+| `pooled_rare_to_anndata.ipynb` | Pooled rare variants (`cpg0032`), barcodes | 290 x 4,046 |
+| `garcia_fossa_agnp_to_anndata.ipynb` | Silver nanoparticles (`cpg0040`) | 180 x 112 |
 
 Point the path constant at the top of each notebook at your download.
 None of these notebooks need the images, only the well-level profiles.

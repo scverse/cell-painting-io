@@ -8,7 +8,7 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 
-METADATA_PREFIXES: Sequence[str] = ("Metadata_", "metadata_", "meta_")
+METADATA_PREFIXES: Sequence[str] = ("Image_Metadata_", "Metadata_", "metadata_", "meta_")
 
 CHANNEL_ALIASES: Mapping[str, str] = {
     "dna": "dna",

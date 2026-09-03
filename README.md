@@ -2,7 +2,7 @@
 
 Experimental! A collection of scripts &amp; utilities to get Cell Painting datasets into scverse data structures.
 
-`cell_painting_io.py` holds the dataset-agnostic parts; each notebook adds only what its dataset needs.
+`src/cell_painting_io/` holds the dataset-agnostic parts; each notebook in `notebooks/` adds only what its dataset needs.
 Everything that has differed between datasets is a parameter rather than an assumption — missing-value sentinels, metadata prefixes, channel naming, columns that disagree across plates, features that are blown up or constant.
 
 [COVERAGE.md](COVERAGE.md) lists every Cell Painting Gallery and IDR accession with its status, and a reason for each one not covered.
@@ -10,13 +10,13 @@ Everything that has differed between datasets is a parameter rather than an assu
 Each notebook starts with the command that fetches its data and a path constant to point at the download.
 None of them need the images.
 
-| Notebook | Dataset | Accession | Wells x features |
+| Notebook (in `notebooks/`) | Dataset | Accession | Wells x features |
 | --- | --- | --- | --- |
 | `wawer` | CDRP bioactives, 30k compounds | `cpg0012` | 153,022 x 781 |
 | `lincs` | LINCS, 1,571 compounds at six doses | `cpg0004` | 52,223 x 1,603 |
 | `jump_crispr` | JUMP CRISPR, assembled | `cpg0016-jump-assembled` | 51,185 x 599 |
 | `eubopen` | EUbOPEN compounds | Zenodo 10894238 | 39,206 x 7,703 |
-| `idr0133` | Dahlin bioactives, from IDR | `idr0133` | 23,110 x 372 |
+| `idr0133` | Dahlin bioactives, from IDR | `idr0133` | 23,108 x 372 |
 | `oasis` | OASIS, axiom site | `cpg0037` | 22,042 x 155 |
 | `periscope` | PERISCOPE pooled screen, genes not wells | `cpg0021` | 20,384 x 3,640 |
 | `cpjump1` | JUMP pilot, batch `2020_11_04_CPJUMP1` | `cpg0000` | 19,498 x 903 |
@@ -49,5 +49,8 @@ None of them need the images.
 
 ```bash
 mamba create -n cell-painting-io -c conda-forge python=3.14 anndata scanpy pandas numpy umap-learn leidenalg matplotlib jupyterlab
+pip install -e .
 prek install
 ```
+
+The notebooks import `cell_painting_io`, so the package needs installing before they run.

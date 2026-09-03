@@ -42,6 +42,7 @@ def read_profiles(
     paths: Path | str | Sequence[Path | str],
     *,
     metadata_prefixes: Sequence[str] = METADATA_PREFIXES,
+    metadata_columns: Sequence[str] = (),
     sentinels: float | Collection[float] | None = None,
     index_columns: Sequence[str] | None = None,
     on_column_mismatch: Literal["raise", "intersect"] = "raise",
@@ -67,9 +68,12 @@ def read_profiles(
     df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
 
     prefixes = tuple(metadata_prefixes)
+    named = set(metadata_columns)
+    if missing_named := named - set(df.columns):
+        raise KeyError(f"metadata columns not in data: {sorted(missing_named)}")
     prefixed = {c for c in df.columns if c.startswith(prefixes)}
     numeric = set(df.select_dtypes("number").columns)
-    meta_columns = [c for c in df.columns if c in prefixed or c not in numeric]
+    meta_columns = [c for c in df.columns if c in prefixed or c in named or c not in numeric]
     feature_columns = [c for c in df.columns if c not in set(meta_columns)]
 
     x = df[feature_columns].to_numpy(np.float32)
@@ -133,4 +137,6 @@ def neighbour_enrichment(adata: ad.AnnData, keys: Iterable[str]) -> pd.DataFrame
         observed = float((codes[graph.row][edges] == codes[graph.col][edges]).mean())
         baseline = float((labels.value_counts(normalize=True).to_numpy() ** 2).sum())
         rows.append({"covariate": key, "observed": observed, "baseline": baseline, "ratio": observed / baseline})
+    if not rows:
+        return pd.DataFrame(columns=["observed", "baseline", "ratio"], index=pd.Index([], name="covariate"))
     return pd.DataFrame(rows).set_index("covariate").round(3)

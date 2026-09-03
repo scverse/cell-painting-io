@@ -4,7 +4,8 @@ Every accession in `s3://cellpainting-gallery/` — 44, against the ~27 listed o
 Only well-level (or, for the pooled screens, barcode-level) profiles are ever downloaded; no images.
 
 Sizes below are what a notebook actually pulls, not the whole profile tree.
-An earlier version of this file excluded several datasets as "too large" by measuring every profile variant; measuring only the variant in use collapsed most of those, and they are now covered.
+An earlier version of this file excluded several datasets as "too large" by measuring every profile variant rather than the one a notebook reads; every one of those exclusions turned out to be wrong and they are now covered.
+The remaining exclusions are structural: the accession publishes no profiles, duplicates one already covered, or already ships AnnData.
 
 ## Covered
 
@@ -32,6 +33,10 @@ An earlier version of this file excluded several datasets as "too large" by meas
 | `cpg0031-caicedo-cmvip` | `luad_to_anndata.ipynb` | 26 MB | LUAD alleles, gene outranks plate |
 | `cpg0032-pooled-rare` | `pooled_rare_to_anndata.ipynb` | 3.7 MB | Pooled; observation is a barcode |
 | `cpg0033-oasis-pilot` | `oasis_pilot_to_anndata.ipynb` | 11 MB | U2OS and HepaRG |
+| `cpg0005-gerry-bioactivity` | `gerry_to_anndata.ipynb` | 62 MB | One flat CSV; the only non-feature column is an opaque `well_profile_id`, so nothing can be tested against the embedding |
+| `cpg0011-lipocyteprofiler` | `lipocyte_to_anndata.ipynb` | 16 MB | **Observations are not wells** — aggregated per patient and cell type, 225 rows |
+| `cpg0025-dactyloscopy` | `dactyloscopy_to_anndata.ipynb` | 264 MB | `backend/` CSVs; five cell lines |
+| `cpg0037-oasis` | `oasis_to_anndata.ipynb` | 52 MB | `axiom` source; 299 duplicated plate/well rows |
 | `cpg0038-tegtmeyer-neuropainting` | `neuropainting_to_anndata.ipynb` | 4.5 MB | Astrocytes and neurons, 20x and 63x |
 | `cpg0039-garcia-fossa-livecellpainting` | `garcia_fossa_live_to_anndata.ipynb` | 6.1 MB | Live Cell Painting |
 | `cpg0040-garcia-fossa-AgNP` | `garcia_fossa_agnp_to_anndata.ipynb` | 288 KB | Nanoparticle size, dose, time |
@@ -46,18 +51,14 @@ Each of these was checked by listing the accession's `workspace/` prefixes, not 
 | Accession | What is published | Why not |
 | --- | --- | --- |
 | `cpg0003-rosetta` | `preprocessed_data/` | Re-processed copies of CDRP, LINCS-Pilot1, LUAD and TA-ORF, all already covered here from their own accessions |
-| `cpg0005-gerry-bioactivity` | one 64 MB CSV | Loads as 4,608 x 1,475 but carries **no metadata columns at all** — `obs` is empty, so wells cannot be annotated and no covariate can be tested |
-| `cpg0011-lipocyteprofiler` | `profiles/` | **Not well-level**: 225 rows keyed by `patientID` and `cellType`, a different aggregation unit from every other dataset |
 | `cpg0015-heterogeneity` | `supplementary/` | No profile tables published |
 | `cpg0016-jump` (13 sources) | per-source `profiles/` | Superseded by `cpg0016-jump-assembled`, which is the table the field actually uses and which is covered |
 | `cpg0018-singh-seedseq` | nothing under `workspace/` | Images only |
 | `cpg0019-moshkov-deepprofiler` | nothing under `workspace/` | Images and DeepProfiler artefacts only |
 | `cpg0023-mpi` | `scratch/` | Nothing published |
-| `cpg0025-dactyloscopy` | `backend/` | 83 aggregated CSVs totalling 45 GB, roughly 543 MB each; the only dataset still excluded purely on size |
 | `cpg0030-gustafsdottir-cellpainting` | `load_data_csv/`, `metadata/` | Image metadata only, no profiles |
 | `cpg0034-arevalo-su-motive` | `publication_data/` | A graph dataset, not well-level profiles |
 | `cpg0036-EU-OS-bioactives` | `load_data_csv/`, `metadata/` | Image metadata only |
-| `cpg0037-oasis` | `profiles/` per source | The `hepatopac` source loads but `obs` holds only `Site_Count`; the assay is covered by `cpg0033-oasis-pilot` |
 | `cpg0042-chandrasekaran-jump` | `profiles_assembled/` | Assembled CPJUMP1, duplicating `cpg0000-jump-pilot` |
 | `cpg0043-segmentation` | `analysis/`, `pipelines/` | Segmentation outputs, not profiles |
 | `cpg0045-ncats-mito` | `load_data_csv/` | Image metadata only |

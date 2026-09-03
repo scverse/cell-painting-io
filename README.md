@@ -91,6 +91,10 @@ One notebook per remaining dataset, each following the same shape: read, annotat
 | `garcia_fossa_live_to_anndata.ipynb` | Live Cell Painting (`cpg0039`) | 536 x 82 |
 | `pooled_rare_to_anndata.ipynb` | Pooled rare variants (`cpg0032`), barcodes | 290 x 4,046 |
 | `garcia_fossa_agnp_to_anndata.ipynb` | Silver nanoparticles (`cpg0040`) | 180 x 112 |
+| `oasis_to_anndata.ipynb` | OASIS, axiom site (`cpg0037`) | 22,042 x 155 |
+| `dactyloscopy_to_anndata.ipynb` | Dactyloscopy (`cpg0025`), from `backend/` | 6,420 x 2,121 |
+| `gerry_to_anndata.ipynb` | Gerry bioactivity (`cpg0005`), no annotation to test against | 4,608 x 1,467 |
+| `lipocyte_to_anndata.ipynb` | Lipocyte Profiler (`cpg0011`), rows are patient x cell type | 225 x 2,870 |
 
 Point the path constant at the top of each notebook at your download.
 None of these notebooks need the images, only the well-level profiles.

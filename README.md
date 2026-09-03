@@ -48,7 +48,7 @@ None of them need the images.
 ## Environment
 
 ```bash
-mamba create -n cell-painting-io -c conda-forge python=3.14 anndata scanpy pandas numpy umap-learn leidenalg matplotlib jupyterlab
+mamba create -n cell-painting-io -c conda-forge python=3.14 anndata scanpy pyarrow
 pip install -e .
 prek install
 ```

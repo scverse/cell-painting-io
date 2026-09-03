@@ -8,10 +8,10 @@ version = "0.1.0"
 description = "Read Cell Painting datasets into scverse data structures"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["anndata", "numpy", "pandas"]
+dependencies = ["anndata"]
 
 [project.optional-dependencies]
-notebooks = ["scanpy", "umap-learn", "leidenalg", "matplotlib", "pyarrow"]
+notebooks = ["scanpy", "pyarrow"]  # pyarrow only because three datasets ship parquet
 
 [tool.ruff]
 line-length = 120

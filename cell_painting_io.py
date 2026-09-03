@@ -53,10 +53,6 @@ def read_profiles(
         raise ValueError("no profile files given")
 
     frames = [_read_frame(path) for path in files]
-    if path_columns:
-        for frame, path in zip(frames, files, strict=True):
-            for name, depth in path_columns.items():
-                frame[name] = path.parents[depth - 1].name
     if len({tuple(frame.columns) for frame in frames}) > 1:
         if on_column_mismatch == "raise":
             raise ValueError("files disagree on columns; pass on_column_mismatch='intersect' to keep the shared ones")
@@ -66,6 +62,14 @@ def read_profiles(
         order = [c for c in frames[0].columns if c in shared]
         frames = [frame[order] for frame in frames]
     df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
+    if path_columns:
+        # one concat rather than a per-file insert, which fragments a wide frame badly
+        lengths = [len(frame) for frame in frames]
+        derived = {
+            name: np.repeat([path.parents[depth - 1].name for path in files], lengths)
+            for name, depth in path_columns.items()
+        }
+        df = pd.concat([df, pd.DataFrame(derived, index=df.index)], axis=1)
 
     prefixes = tuple(metadata_prefixes)
     named = set(metadata_columns)

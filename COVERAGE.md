@@ -1,4 +1,6 @@
-# Cell Painting Gallery coverage
+# Coverage
+
+## Cell Painting Gallery
 
 Every accession in `s3://cellpainting-gallery/` — 44, against the ~27 listed on the [dataset page](https://broadinstitute.github.io/cellpainting-gallery/complete_datasets.html).
 Only well-level (or, for the pooled screens, barcode-level) profiles are ever downloaded; no images.
@@ -64,3 +66,28 @@ Each of these was checked by listing the accession's `workspace/` prefixes, not 
 | `cpg0045-ncats-mito` | `load_data_csv/` | Image metadata only |
 | `cpg0046-microrna` | `profiles_assembled/*.h5ad` | **Already distributed as AnnData**, so there is nothing here to convert |
 | `cpg0049-ipsc-diff-pancreatic-progenitor` | `load_data_csv/`, `metadata/` | Image metadata only |
+
+
+## Image Data Resource
+
+Seven studies in the [IDR](https://idr.openmicroscopy.org/) use the Cell Painting assay, identified from the `Study Type`, keywords and dye lists in each study's metadata record rather than from the short API descriptions, which omit the term for several of them.
+
+IDR is an image repository: each study publishes one ISA-Tab annotation table per screen, and only one puts features in it.
+The rest carry experimental annotation only; where their features exist at all they are in the Cell Painting Gallery, already covered here.
+
+Annotation tables are read from each study's GitHub repository rather than the IDR API, to keep load off a shared public server.
+
+| Study | Annotation columns | Features | Status |
+| --- | --- | --- | --- |
+| `idr0133-dahlin-cellpainting` | 403 | 372 | `idr0133_to_anndata.ipynb` |
+| `idr0016-wawer-bioactivecompoundprofiling` | 24 | 0 | annotation only; features are `cpg0012` |
+| `idr0033-rohban-pathways` | 77 | 0 | annotation only; features are `cpg0017` |
+| `idr0088-cox-phenomicprofiling` | 21 | 0 | annotation only |
+| `idr0080-way-perturbation` | 17 | 0 | annotation only |
+| `idr0160-lippincott-pyroptosis` | 38 | 0 | annotation only |
+| `idr0036-gustafsdottir-cellpainting` | — | — | no annotation repository on GitHub; publishes no profiles here or in the gallery (`cpg0030`) |
+
+`idr0035-caie-drugresponse` is BBBC021 rather than Cell Painting proper and is covered from `cpg0010`.
+
+`idr0093-mueller-perturbation` publishes ~380 per-well features, but under its own naming (`nuclei_area_mean`, `frac_G1`) rather than CellProfiler's, and it is an EU/nascent-RNA assay rather than Cell Painting, so it is out of scope.
+Detection here keys on CellProfiler naming, so features published under another convention would be missed.

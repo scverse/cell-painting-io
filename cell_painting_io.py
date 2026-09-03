@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from pathlib import Path
+from typing import Literal
 
 import anndata as ad
 import numpy as np
 import pandas as pd
 
-METADATA_PREFIXES: Sequence[str] = ("Metadata_", "metadata_", "meta_")
+METADATA_PREFIXES: Sequence[str] = ("Image_Metadata_", "Metadata_", "metadata_", "meta_")
 
 CHANNEL_ALIASES: Mapping[str, str] = {
     "dna": "dna",
@@ -41,8 +42,11 @@ def read_profiles(
     paths: Path | str | Sequence[Path | str],
     *,
     metadata_prefixes: Sequence[str] = METADATA_PREFIXES,
+    metadata_columns: Sequence[str] = (),
     sentinels: float | Collection[float] | None = None,
     index_columns: Sequence[str] | None = None,
+    on_column_mismatch: Literal["raise", "intersect"] = "raise",
+    path_columns: Mapping[str, int] | None = None,
 ) -> ad.AnnData:
     files = [Path(paths)] if isinstance(paths, str | Path) else [Path(p) for p in paths]
     if not files:
@@ -50,12 +54,31 @@ def read_profiles(
 
     frames = [_read_frame(path) for path in files]
     if len({tuple(frame.columns) for frame in frames}) > 1:
-        raise ValueError("files disagree on columns; intersect features before concatenating")
+        if on_column_mismatch == "raise":
+            raise ValueError("files disagree on columns; pass on_column_mismatch='intersect' to keep the shared ones")
+        shared = set.intersection(*(set(frame.columns) for frame in frames))
+        if not shared:
+            raise ValueError("files share no columns")
+        order = [c for c in frames[0].columns if c in shared]
+        frames = [frame[order] for frame in frames]
     df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
+    if path_columns:
+        # one concat rather than a per-file insert, which fragments a wide frame badly
+        lengths = [len(frame) for frame in frames]
+        derived = {
+            name: np.repeat([path.parents[depth - 1].name for path in files], lengths)
+            for name, depth in path_columns.items()
+        }
+        df = pd.concat([df, pd.DataFrame(derived, index=df.index)], axis=1)
 
     prefixes = tuple(metadata_prefixes)
-    meta_columns = [c for c in df.columns if c.startswith(prefixes)]
-    feature_columns = [c for c in df.columns if c not in meta_columns]
+    named = set(metadata_columns)
+    if missing_named := named - set(df.columns):
+        raise KeyError(f"metadata columns not in data: {sorted(missing_named)}")
+    prefixed = {c for c in df.columns if c.startswith(prefixes)}
+    numeric = set(df.select_dtypes("number").columns)
+    meta_columns = [c for c in df.columns if c in prefixed or c in named or c not in numeric]
+    feature_columns = [c for c in df.columns if c not in set(meta_columns)]
 
     x = df[feature_columns].to_numpy(np.float32)
     if sentinels is not None:
@@ -63,6 +86,8 @@ def read_profiles(
         x[np.isin(x, np.asarray(values, dtype=x.dtype))] = np.nan
 
     obs = df[meta_columns].rename(columns=lambda c: _strip_prefix(c, prefixes))
+    for column in obs.select_dtypes("object").columns:
+        obs[column] = obs[column].astype("string")
     if index_columns:
         missing = [c for c in index_columns if c not in obs.columns]
         if missing:
@@ -77,8 +102,17 @@ def read_profiles(
 
 
 def drop_incomplete_features(adata: ad.AnnData, *, max_missing: float = 0.0) -> ad.AnnData:
-    missing = np.isnan(adata.X).mean(axis=0)
+    missing = (~np.isfinite(adata.X)).mean(axis=0)
     return adata[:, missing <= max_missing].copy()
+
+
+def drop_extreme_features(adata: ad.AnnData, *, max_abs: float = 1e6) -> ad.AnnData:
+    largest = np.nanmax(np.abs(adata.X), axis=0)
+    return adata[:, largest <= max_abs].copy()
+
+
+def drop_constant_features(adata: ad.AnnData) -> ad.AnnData:
+    return adata[:, np.nanstd(adata.X, axis=0) > 0].copy()
 
 
 def annotate_features(var: pd.DataFrame, *, aliases: Mapping[str, str] = CHANNEL_ALIASES) -> None:
@@ -100,8 +134,13 @@ def neighbour_enrichment(adata: ad.AnnData, keys: Iterable[str]) -> pd.DataFrame
     graph = adata.obsp["connectivities"].tocoo()
     rows = []
     for key in keys:
-        labels = adata.obs[key].to_numpy()
-        observed = float((labels[graph.row] == labels[graph.col]).mean())
-        baseline = float((adata.obs[key].value_counts(normalize=True).to_numpy() ** 2).sum())
+        labels = adata.obs[key]
+        codes = labels.astype("category").cat.codes.to_numpy()
+        known = labels.notna().to_numpy()
+        edges = known[graph.row] & known[graph.col]
+        observed = float((codes[graph.row][edges] == codes[graph.col][edges]).mean())
+        baseline = float((labels.value_counts(normalize=True).to_numpy() ** 2).sum())
         rows.append({"covariate": key, "observed": observed, "baseline": baseline, "ratio": observed / baseline})
+    if not rows:
+        return pd.DataFrame(columns=["observed", "baseline", "ratio"], index=pd.Index([], name="covariate"))
     return pd.DataFrame(rows).set_index("covariate").round(3)

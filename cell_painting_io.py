@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from pathlib import Path
+from typing import Literal
 
 import anndata as ad
 import numpy as np
@@ -43,6 +44,7 @@ def read_profiles(
     metadata_prefixes: Sequence[str] = METADATA_PREFIXES,
     sentinels: float | Collection[float] | None = None,
     index_columns: Sequence[str] | None = None,
+    on_column_mismatch: Literal["raise", "intersect"] = "raise",
 ) -> ad.AnnData:
     files = [Path(paths)] if isinstance(paths, str | Path) else [Path(p) for p in paths]
     if not files:
@@ -50,7 +52,13 @@ def read_profiles(
 
     frames = [_read_frame(path) for path in files]
     if len({tuple(frame.columns) for frame in frames}) > 1:
-        raise ValueError("files disagree on columns; intersect features before concatenating")
+        if on_column_mismatch == "raise":
+            raise ValueError("files disagree on columns; pass on_column_mismatch='intersect' to keep the shared ones")
+        shared = set.intersection(*(set(frame.columns) for frame in frames))
+        if not shared:
+            raise ValueError("files share no columns")
+        order = [c for c in frames[0].columns if c in shared]
+        frames = [frame[order] for frame in frames]
     df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
 
     prefixes = tuple(metadata_prefixes)
@@ -77,8 +85,13 @@ def read_profiles(
 
 
 def drop_incomplete_features(adata: ad.AnnData, *, max_missing: float = 0.0) -> ad.AnnData:
-    missing = np.isnan(adata.X).mean(axis=0)
+    missing = (~np.isfinite(adata.X)).mean(axis=0)
     return adata[:, missing <= max_missing].copy()
+
+
+def drop_extreme_features(adata: ad.AnnData, *, max_abs: float = 1e6) -> ad.AnnData:
+    largest = np.nanmax(np.abs(adata.X), axis=0)
+    return adata[:, largest <= max_abs].copy()
 
 
 def annotate_features(var: pd.DataFrame, *, aliases: Mapping[str, str] = CHANNEL_ALIASES) -> None:

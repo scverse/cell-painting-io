@@ -2,21 +2,21 @@
 
 Experimental! A collection of scripts &amp; utilities to get Cell Painting datasets into scverse data structures.
 
-`src/cell_painting_io/` holds the dataset-agnostic parts; each notebook in `notebooks/` adds only what its dataset needs.
-Everything that has differed between datasets is a parameter rather than an assumption — missing-value sentinels, metadata prefixes, channel naming, columns that disagree across plates, features that are blown up or constant.
+Reader in `src/cell_painting_io/`, one notebook per dataset in `notebooks/`.
+[COVERAGE.md](COVERAGE.md) lists every Cell Painting Gallery and IDR accession, covered or not, with reasons.
 
-[COVERAGE.md](COVERAGE.md) lists every Cell Painting Gallery and IDR accession with its status, and a reason for each one not covered.
+```bash
+mamba create -n cell-painting-io -c conda-forge python=3.14 anndata scanpy pyarrow
+pip install -e .
+```
 
-Each notebook starts with the command that fetches its data and a path constant to point at the download.
-None of them need the images.
-
-| Notebook (in `notebooks/`) | Dataset | Accession | Wells x features |
+| Notebook | Dataset | Accession | Wells x features |
 | --- | --- | --- | --- |
 | `wawer` | CDRP bioactives, 30k compounds | `cpg0012` | 153,022 x 781 |
 | `lincs` | LINCS, 1,571 compounds at six doses | `cpg0004` | 52,223 x 1,603 |
 | `jump_crispr` | JUMP CRISPR, assembled | `cpg0016-jump-assembled` | 51,185 x 599 |
 | `eubopen` | EUbOPEN compounds | Zenodo 10894238 | 39,206 x 7,703 |
-| `idr0133` | Dahlin bioactives, from IDR | `idr0133` | 23,108 x 372 |
+| `idr0133` | Dahlin bioactives | `idr0133` | 23,108 x 372 |
 | `oasis` | OASIS, axiom site | `cpg0037` | 22,042 x 155 |
 | `periscope` | PERISCOPE pooled screen, genes not wells | `cpg0021` | 20,384 x 3,640 |
 | `cpjump1` | JUMP pilot, batch `2020_11_04_CPJUMP1` | `cpg0000` | 19,498 x 903 |
@@ -44,13 +44,3 @@ None of them need the images.
 | `lipocyte` | Lipocyte Profiler, rows are patient x cell type | `cpg0011` | 225 x 2,870 |
 | `neuropainting` | Astrocytes and neurons, 20x and 63x | `cpg0038` | 188 x 563 |
 | `garcia_fossa_agnp` | Silver nanoparticles, size and dose | `cpg0040` | 180 x 112 |
-
-## Environment
-
-```bash
-mamba create -n cell-painting-io -c conda-forge python=3.14 anndata scanpy pyarrow
-pip install -e .
-prek install
-```
-
-The notebooks import `cell_painting_io`, so the package needs installing before they run.

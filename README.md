@@ -8,6 +8,8 @@ Each notebook adds only what its dataset needs on top.
 Everything that has differed between datasets so far is a parameter rather than an assumption: the missing-value sentinel (`-9999` in EUbOPEN, absent elsewhere), the metadata column prefix (`Metadata_`, `meta_`, `metadata_`), and channel naming (`LowZBF` and `bflow` canonicalise to the same channel).
 `read_profiles(..., on_column_mismatch="intersect")` handles collections of plates that disagree on columns, and `drop_incomplete_features` / `drop_extreme_features` remove features that are missing or numerically blown up.
 
+[COVERAGE.md](COVERAGE.md) lists every accession in the Cell Painting Gallery with its status, and a reason for each one that is not covered.
+
 ## Notebooks
 
 ### `cpjump1_to_anndata.ipynb`
@@ -60,6 +62,24 @@ Caicedo CMVIP ([`cpg0031-caicedo-cmvip`](https://broadinstitute.github.io/cellpa
 aws s3 cp --no-sign-request --recursive --exclude "*" --include "*_normalized_feature_select_batch.csv.gz" \
   s3://cellpainting-gallery/cpg0031-caicedo-cmvip/broad/workspace/profiles/ .
 ```
+
+### The rest
+
+One notebook per remaining dataset, each following the same shape: read, annotate, drop unusable features, save, embed, then measure what the embedding actually encodes before looking at it.
+
+| Notebook | Dataset | Wells x features |
+| --- | --- | --- |
+| `jump_crispr_to_anndata.ipynb` | JUMP CRISPR, assembled (`cpg0016-jump-assembled`) | 51,185 x 599 |
+| `pki_to_anndata.ipynb` | Kinase inhibitors (`cpg0008`) | 3,072 x 1,061 |
+| `varchamp_to_anndata.ipynb` | Coding variants (`cpg0020`) | 7,177 x 853 |
+| `rare_diseases_to_anndata.ipynb` | Rare disease variants (`cpg0026`) | 5,634 x 1,795 |
+| `jump_adipocyte_to_anndata.ipynb` | Adipocytes (`cpg0014`) | 9,216 x 848 |
+| `oasis_pilot_to_anndata.ipynb` | OASIS pilot (`cpg0033`) | 2,303 x 718 |
+| `bortezomib_to_anndata.ipynb` | Bortezomib resistance (`cpg0024`) | 768 x 4,695 |
+| `miami_to_anndata.ipynb` | MIAMI (`cpg0006`) | 1,387 x 264 |
+| `chroma_to_anndata.ipynb` | Alternative dyes (`cpg0029`) | 767 x 675 |
+| `amish_to_anndata.ipynb` | Amish cohort (`cpg0047`) | 468 x 790 |
+| `neuropainting_to_anndata.ipynb` | Brain cell types (`cpg0038`) | 188 x 563 |
 
 Point the path constant at the top of each notebook at your download.
 None of these notebooks need the images, only the well-level profiles.

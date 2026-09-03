@@ -45,12 +45,17 @@ def read_profiles(
     sentinels: float | Collection[float] | None = None,
     index_columns: Sequence[str] | None = None,
     on_column_mismatch: Literal["raise", "intersect"] = "raise",
+    path_columns: Mapping[str, int] | None = None,
 ) -> ad.AnnData:
     files = [Path(paths)] if isinstance(paths, str | Path) else [Path(p) for p in paths]
     if not files:
         raise ValueError("no profile files given")
 
     frames = [_read_frame(path) for path in files]
+    if path_columns:
+        for frame, path in zip(frames, files, strict=True):
+            for name, depth in path_columns.items():
+                frame[name] = path.parents[depth - 1].name
     if len({tuple(frame.columns) for frame in frames}) > 1:
         if on_column_mismatch == "raise":
             raise ValueError("files disagree on columns; pass on_column_mismatch='intersect' to keep the shared ones")
@@ -62,8 +67,10 @@ def read_profiles(
     df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
 
     prefixes = tuple(metadata_prefixes)
-    meta_columns = [c for c in df.columns if c.startswith(prefixes)]
-    feature_columns = [c for c in df.columns if c not in meta_columns]
+    prefixed = {c for c in df.columns if c.startswith(prefixes)}
+    numeric = set(df.select_dtypes("number").columns)
+    meta_columns = [c for c in df.columns if c in prefixed or c not in numeric]
+    feature_columns = [c for c in df.columns if c not in set(meta_columns)]
 
     x = df[feature_columns].to_numpy(np.float32)
     if sentinels is not None:
@@ -71,6 +78,8 @@ def read_profiles(
         x[np.isin(x, np.asarray(values, dtype=x.dtype))] = np.nan
 
     obs = df[meta_columns].rename(columns=lambda c: _strip_prefix(c, prefixes))
+    for column in obs.select_dtypes("object").columns:
+        obs[column] = obs[column].astype("string")
     if index_columns:
         missing = [c for c in index_columns if c not in obs.columns]
         if missing:
@@ -94,6 +103,10 @@ def drop_extreme_features(adata: ad.AnnData, *, max_abs: float = 1e6) -> ad.AnnD
     return adata[:, largest <= max_abs].copy()
 
 
+def drop_constant_features(adata: ad.AnnData) -> ad.AnnData:
+    return adata[:, np.nanstd(adata.X, axis=0) > 0].copy()
+
+
 def annotate_features(var: pd.DataFrame, *, aliases: Mapping[str, str] = CHANNEL_ALIASES) -> None:
     tokens = [name.lower().split("_") for name in var.index]
     matched = [[aliases[t] for t in token if t in aliases] for token in tokens]
@@ -113,8 +126,11 @@ def neighbour_enrichment(adata: ad.AnnData, keys: Iterable[str]) -> pd.DataFrame
     graph = adata.obsp["connectivities"].tocoo()
     rows = []
     for key in keys:
-        labels = adata.obs[key].to_numpy()
-        observed = float((labels[graph.row] == labels[graph.col]).mean())
-        baseline = float((adata.obs[key].value_counts(normalize=True).to_numpy() ** 2).sum())
+        labels = adata.obs[key]
+        codes = labels.astype("category").cat.codes.to_numpy()
+        known = labels.notna().to_numpy()
+        edges = known[graph.row] & known[graph.col]
+        observed = float((codes[graph.row][edges] == codes[graph.col][edges]).mean())
+        baseline = float((labels.value_counts(normalize=True).to_numpy() ** 2).sum())
         rows.append({"covariate": key, "observed": observed, "baseline": baseline, "ratio": observed / baseline})
     return pd.DataFrame(rows).set_index("covariate").round(3)

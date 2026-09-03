@@ -70,20 +70,24 @@ Each of these was checked by listing the accession's `workspace/` prefixes, not 
 
 ## Image Data Resource
 
-Five studies in the [IDR](https://idr.openmicroscopy.org/) use the Cell Painting assay.
-IDR is an image repository: each study publishes one ISA-Tab annotation table per screen, and only one of them puts features in it.
-The others carry experimental annotation only, and their features are in the Cell Painting Gallery under the accessions below, where they are already covered.
+Seven studies in the [IDR](https://idr.openmicroscopy.org/) use the Cell Painting assay, identified from the `Study Type`, keywords and dye lists in each study's metadata record rather than from the short API descriptions, which omit the term for several of them.
 
-Annotation tables are taken from the study's GitHub repository rather than the IDR API, which keeps the load off a shared public server.
+IDR is an image repository: each study publishes one ISA-Tab annotation table per screen, and only one puts features in it.
+The rest carry experimental annotation only; where their features exist at all they are in the Cell Painting Gallery, already covered here.
+
+Annotation tables are read from each study's GitHub repository rather than the IDR API, to keep load off a shared public server.
 
 | Study | Annotation columns | Features | Status |
 | --- | --- | --- | --- |
 | `idr0133-dahlin-cellpainting` | 403 | 372 | `idr0133_to_anndata.ipynb` |
-| `idr0016-wawer-bioactivecompoundprofiling` | 24 | 0 | metadata only; features are `cpg0012` |
-| `idr0033-rohban-pathways` | 77 | 0 | metadata only; features are `cpg0017` |
-| `idr0080-way-perturbation` | 17 | 0 | metadata only |
-| `idr0160-lippincott-pyroptosis` | 38 | 0 | metadata only |
+| `idr0016-wawer-bioactivecompoundprofiling` | 24 | 0 | annotation only; features are `cpg0012` |
+| `idr0033-rohban-pathways` | 77 | 0 | annotation only; features are `cpg0017` |
+| `idr0088-cox-phenomicprofiling` | 21 | 0 | annotation only |
+| `idr0080-way-perturbation` | 17 | 0 | annotation only |
+| `idr0160-lippincott-pyroptosis` | 38 | 0 | annotation only |
+| `idr0036-gustafsdottir-cellpainting` | — | — | no annotation repository on GitHub; publishes no profiles here or in the gallery (`cpg0030`) |
 
-`idr0035-caie-drugresponse` and `idr0036-gustafsdottir-cellpainting` have no annotation repository on GitHub; the first is covered from `cpg0010`, the second publishes no profiles anywhere.
+`idr0035-caie-drugresponse` is BBBC021 rather than Cell Painting proper and is covered from `cpg0010`.
 
-`idr0093-mueller-perturbation` does publish ~380 per-well features, but under its own naming (`nuclei_area_mean`, `frac_G1`) rather than CellProfiler's, and it is an EU/nascent-RNA assay rather than Cell Painting, so it is out of scope.
+`idr0093-mueller-perturbation` publishes ~380 per-well features, but under its own naming (`nuclei_area_mean`, `frac_G1`) rather than CellProfiler's, and it is an EU/nascent-RNA assay rather than Cell Painting, so it is out of scope.
+Detection here keys on CellProfiler naming, so features published under another convention would be missed.

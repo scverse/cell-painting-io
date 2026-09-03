@@ -1,6 +1,6 @@
 # Cell Painting Gallery coverage
 
-Every accession in `s3://cellpainting-gallery/` — 45, against the ~27 listed on the [dataset page](https://broadinstitute.github.io/cellpainting-gallery/complete_datasets.html).
+Every accession in `s3://cellpainting-gallery/` — 44, against the ~27 listed on the [dataset page](https://broadinstitute.github.io/cellpainting-gallery/complete_datasets.html).
 Only well-level (or, for the pooled screens, barcode-level) profiles are ever downloaded; no images.
 
 Sizes below are what a notebook actually pulls, not the whole profile tree.
@@ -18,7 +18,7 @@ An earlier version of this file excluded several datasets as "too large" by meas
 | `cpg0008-pki` | `pki_to_anndata.ipynb` | 11 MB | Kinase inhibitors, dose and MoA |
 | `cpg0009-molglue` | `molglue_to_anndata.ipynb` | 267 MB | No `profiles/`; aggregated CSVs under `backend/` |
 | `cpg0010-caie-drugresponse` | `caie_to_anndata.ipynb` | 6 MB | Uses the `Image_Metadata_` prefix |
-| `cpg0012-wawer…` | `wawer_to_anndata.ipynb` | 386 MB | CDRP, 153,022 wells, the largest per-plate set |
+| `cpg0012-wawer-bioactivecompoundprofiling` | `wawer_to_anndata.ipynb` | 386 MB | CDRP, 153,022 wells, the largest per-plate set |
 | `cpg0014-jump-adipocyte` | `jump_adipocyte_to_anndata.ipynb` | 120 MB | Differentiated adipocytes |
 | `cpg0016-jump-assembled` | `jump_crispr_to_anndata.ipynb` | 177 MB | Assembled CRISPR arm |
 | `cpg0017-rohban-pathways` | `rohban_to_anndata.ipynb` | 12 MB | Gene identity outranks plate |
@@ -48,6 +48,7 @@ Each of these was checked by listing the accession's `workspace/` prefixes, not 
 | `cpg0003-rosetta` | `preprocessed_data/` | Re-processed copies of CDRP, LINCS-Pilot1, LUAD and TA-ORF, all already covered here from their own accessions |
 | `cpg0005-gerry-bioactivity` | one 64 MB CSV | Loads as 4,608 x 1,475 but carries **no metadata columns at all** — `obs` is empty, so wells cannot be annotated and no covariate can be tested |
 | `cpg0011-lipocyteprofiler` | `profiles/` | **Not well-level**: 225 rows keyed by `patientID` and `cellType`, a different aggregation unit from every other dataset |
+| `cpg0015-heterogeneity` | `supplementary/` | No profile tables published |
 | `cpg0016-jump` (13 sources) | per-source `profiles/` | Superseded by `cpg0016-jump-assembled`, which is the table the field actually uses and which is covered |
 | `cpg0018-singh-seedseq` | nothing under `workspace/` | Images only |
 | `cpg0019-moshkov-deepprofiler` | nothing under `workspace/` | Images and DeepProfiler artefacts only |

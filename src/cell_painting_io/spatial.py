@@ -181,33 +181,35 @@ def _pixel_size(load_data: pd.DataFrame) -> float:
     return float(sizes.item())
 
 
-def _channels(load_data: pd.DataFrame) -> list[str]:
-    for prefix in ("URL_Orig", "FileName_Orig"):
+def _channels(load_data: pd.DataFrame) -> tuple[str, list[str]]:
+    for prefix in ("URL_Orig", "FileName_Orig", "URL_", "FileName_"):
         names = [c.removeprefix(prefix) for c in load_data.columns if c.startswith(prefix)]
+        names = [name for name in names if not name.startswith("Illum")]
         if names:
-            return names
-    raise ValueError("load_data.csv has neither URL_Orig nor FileName_Orig columns")
+            return prefix, names
+    raise ValueError("load_data.csv does not name the image of each channel")
 
 
-def _image_path(root: Path, batch: str, row: pd.Series, channel: str) -> Path:
+def _image_path(root: Path, batch: str, row: pd.Series, prefix: str, channel: str) -> Path:
     """Locate a channel of one field under `root`.
 
-    Sources record images either as an `URL_Orig*` S3 URI or as a `FileName_Orig*`/`PathName_Orig*` pair whose
-    path is wherever the images sat when CellProfiler ran.
+    Sources record images either as an `URL_*` S3 URI or as a `FileName_*`/`PathName_*` pair whose path is
+    wherever the images sat when CellProfiler ran.
     Both end in the gallery's own `<batch>/images/<acquisition>/Images/` layout, which is what is matched on.
     """
-    if f"URL_Orig{channel}" in row:
-        location = str(row[f"URL_Orig{channel}"])
+    if prefix.startswith("URL_"):
+        location = str(row[f"{prefix}{channel}"])
     else:
-        location = f"{row[f'PathName_Orig{channel}']}/{row[f'FileName_Orig{channel}']}"
+        directory = row[f"PathName_{prefix.removeprefix('FileName_')}{channel}"]
+        location = f"{directory}/{row[f'{prefix}{channel}']}"
     marker = f"/{batch}/images/"
     if marker not in location:
         raise ValueError(f"image location does not follow the gallery layout: {location}")
     return root / "images" / location[location.index(marker) + 1 :]
 
 
-def _read_fov(root: Path, batch: str, row: pd.Series, channels: Sequence[str]) -> npt.NDArray:
-    return np.stack([iio.imread(_image_path(root, batch, row, channel)) for channel in channels])
+def _read_fov(root: Path, batch: str, row: pd.Series, prefix: str, channels: Sequence[str]) -> npt.NDArray:
+    return np.stack([iio.imread(_image_path(root, batch, row, prefix, channel)) for channel in channels])
 
 
 def _site_dir(root: Path, batch: str, plate: str, well: str, site: int) -> Path:
@@ -231,6 +233,25 @@ def _outline_file(directory: Path, well: str, site: int, kind: str) -> Path | No
     return None
 
 
+def _outline_candidates(image: npt.NDArray) -> list[npt.NDArray[np.bool_]]:
+    """The ways an outline image might encode its outlines, best guess first.
+
+    Most sources publish the outlines on their own. Some draw them in colour over the greyscale image, in which
+    case the outline is what is not grey - but a single image can carry two object types in two colours, so each
+    colour is also offered on its own and the caller keeps whichever reconstructs the most objects.
+    """
+    if image.ndim == 2:
+        return [image > 0]
+    if image.ndim != 3 or image.shape[-1] not in (3, 4):
+        return []
+    channels = image[..., :3].astype(np.int16)
+    coloured = (channels[..., 0] != channels[..., 1]) | (channels[..., 1] != channels[..., 2])
+    colours = np.unique(channels[coloured].reshape(-1, 3), axis=0)
+    if len(colours) < 2:
+        return [coloured]
+    return [coloured, *((channels == colour).all(axis=-1) for colour in colours)]
+
+
 def _centre_columns(objects: pd.DataFrame) -> tuple[str, str]:
     for prefix in ("Location_Center", "AreaShape_Center"):
         if {f"{prefix}_X", f"{prefix}_Y"}.issubset(objects.columns):
@@ -244,13 +265,15 @@ def _site_labels(directory: Path, well: str, site: int) -> dict[str, npt.NDArray
         path = _outline_file(directory, well, site, kind)
         if path is None or not (directory / f"{csv}.csv").exists():
             return {}
-        outlines = np.squeeze(iio.imread(path))
-        if outlines.ndim != 2:
-            # some sources publish a colour overlay of the outlines on the image rather than the outlines alone
+        candidates = _outline_candidates(np.squeeze(iio.imread(path)))
+        if not candidates:
             return {}
         objects = pd.read_csv(directory / f"{csv}.csv")
         x_column, y_column = _centre_columns(objects)
-        masks[name] = labels_from_outlines(outlines, objects, x_column=x_column, y_column=y_column)
+        reconstructed = [
+            labels_from_outlines(candidate, objects, x_column=x_column, y_column=y_column) for candidate in candidates
+        ]
+        masks[name] = max(reconstructed, key=lambda labels: len(np.unique(labels)))
     masks["cytoplasm"] = np.where(masks["nuclei"] > 0, 0, masks["cells"])
     return masks
 
@@ -369,7 +392,7 @@ def read_plate(
         if plane is None:
             raise ValueError(f"{plate} has several rows per field; pass plane= to choose one of {planes}")
         load_data = load_data[load_data["Metadata_PlaneID"] == plane]
-    channels = _channels(load_data)
+    prefix, channels = _channels(load_data)
     located = {
         "Metadata_PositionX",
         "Metadata_PositionY",
@@ -393,7 +416,7 @@ def read_plate(
 
     if wells is None:
         first = load_data.groupby(level="well").head(1)
-        wells = [key[0] for key, row in first.iterrows() if _image_path(root, batch, row, channels[0]).exists()]
+        wells = [key[0] for key, row in first.iterrows() if _image_path(root, batch, row, prefix, channels[0]).exists()]
 
     images, labels, masks, analysed = {}, {}, {}, []
     for well in wells:
@@ -405,7 +428,7 @@ def read_plate(
                 transformations[f"{plate}_{well}"] = Translation([offset["well_y"], offset["well_x"]], axes=("y", "x"))
                 transformations[plate] = Translation([offset["plate_y"], offset["plate_x"]], axes=("y", "x"))
             images[f"{fov}_image"] = Image2DModel.parse(
-                _read_fov(root, batch, load_data.loc[(well, site)], channels),
+                _read_fov(root, batch, load_data.loc[(well, site)], prefix, channels),
                 dims=("c", "y", "x"),
                 c_coords=channels,
                 transformations=transformations,

@@ -17,6 +17,9 @@ from pathlib import Path
 import pandas as pd
 import s3fs
 
+# the same rules read_plate reads by, so a fetch cannot disagree with it about where an image lives
+from cell_painting_io.spatial import _channels, _image_path
+
 BUCKET = "cellpainting-gallery"
 SKIP = ("Cytoplasm.csv", "Experiment.csv", "Image.csv", "cp.is.done")
 PROFILE_ORDER = (
@@ -75,19 +78,13 @@ def fetch(source: str, batch: str, plate: str, well: str, root: Path) -> str | N
 
     frame = pd.read_csv(load_data)
     frame = frame[frame["Metadata_Well"].astype(str) == well]
-    channels = [c for c in frame.columns if c.startswith("URL_Orig")] or [
-        c for c in frame.columns if c.startswith("FileName_Orig")
-    ]
+    prefix, channels = _channels(frame)
     keys, destinations = [], []
     for _, row in frame.iterrows():
-        for column in channels:
-            if column.startswith("URL_"):
-                location = str(row[column])
-            else:
-                location = f"{row['PathName_Orig' + column.removeprefix('FileName_Orig')]}/{row[column]}"
-            tail = location[location.index(f"/{batch}/images/") + 1 :]
-            keys.append(f"{source}/images/{tail}")
-            destinations.append(root / "images" / tail)
+        for channel in channels:
+            destination = _image_path(root, batch, row, prefix, channel)
+            keys.append(f"{source}/{destination.relative_to(root)}")
+            destinations.append(destination)
     download(keys, destinations)
     return profile
 

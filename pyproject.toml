@@ -12,7 +12,7 @@ dependencies = ["anndata", "numpy", "pandas"]
 
 [project.optional-dependencies]
 notebooks = ["scanpy", "umap-learn", "leidenalg", "matplotlib", "pyarrow"]
-spatial = ["scipy", "scikit-image", "spatialdata", "spatialdata-plot", "tifffile"]
+spatial = ["scipy", "scikit-image", "spatialdata", "spatialdata-plot", "imageio", "imagecodecs"]
 test = ["pytest"]
 
 [tool.ruff]

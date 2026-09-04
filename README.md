@@ -47,13 +47,12 @@ All but one of them read profiles only and never touch the images.
 
 ## Images
 
-`notebooks/cpjump1_to_spatialdata.ipynb` is the one notebook that goes past the profiles.
-It builds a [SpatialData](https://spatialdata.scverse.org) object per plate of the JUMP pilot (`cpg0000`): fields of view as Images, the CellProfiler Nuclei, Cells and Cytoplasm segmentations as Labels, one circle per well as Shapes, and both the well-level profile and the per-cell measurements as Tables.
-A field, its well and its plate are three coordinate systems related by translations, read off the stage coordinates the microscope recorded, so the fields of a well lay out as a mosaic and the wells as a plate map.
-Element names carry the plate barcode, so two plate objects concatenate without renaming.
+`cell_painting_io.read_plate` reads one plate of a Cell Painting Gallery source into a [SpatialData](https://spatialdata.scverse.org) object: fields of view as Images, the CellProfiler Nuclei, Cells and Cytoplasm segmentations as Labels, the wells as Shapes, and the well- and cell-level measurements as Tables.
+Every element sits in a field, a well and a plate coordinate system, built from the stage coordinates the microscope recorded, and carries the plate barcode in its name so two plates concatenate.
 
-The gallery publishes object outlines rather than segmentation masks, so the Labels are reconstructed from them; `cell_painting_io.spatial` holds that and the coordinate arithmetic.
-Only two wells of each of two plates are downloaded, roughly 700 MB, against tens of terabytes of images for this accession alone.
+The gallery publishes one-pixel object outlines rather than segmentation masks, so the Labels are reconstructed from them, keeping CellProfiler's object numbers so the per-object tables join onto them.
+
+`notebooks/cpjump1_to_spatialdata.ipynb` runs it on two wells of two JUMP pilot plates, roughly 700 MB against the tens of terabytes of images for that accession.
 
 ## Environment
 

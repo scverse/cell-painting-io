@@ -13,39 +13,42 @@ The remaining exclusions are structural: the accession publishes no profiles, du
 
 | Accession | Notebook | Downloaded | Notes |
 | --- | --- | --- | --- |
-| `cpg0000-jump-pilot` | `notebooks/cpjump1_to_anndata.ipynb` | 5.5 GB | CPJUMP1, via the paper's GitHub mirror |
-| `cpg0000-jump-pilot` | `notebooks/cpjump1_to_spatialdata.ipynb` | 700 MB | Images and segmentations of two wells on each of two plates |
-| `cpg0001-cellpainting-protocol` | `notebooks/cellpainting_protocol_to_anndata.ipynb` | 118 MB | Batches share *no* features; one batch used |
-| `cpg0002-jump-scope` | `notebooks/jump_scope_to_anndata.ipynb` | 158 MB | Batches are imaging configurations |
-| `cpg0004-lincs` | `notebooks/lincs_to_anndata.ipynb` | 789 MB | Feature selection per plate, so `_normalized_dmso` |
-| `cpg0006-miami` | `notebooks/miami_to_anndata.ipynb` | 6.7 MB | |
-| `cpg0008-pki` | `notebooks/pki_to_anndata.ipynb` | 11 MB | Kinase inhibitors, dose and MoA |
-| `cpg0009-molglue` | `notebooks/molglue_to_anndata.ipynb` | 267 MB | No `profiles/`; aggregated CSVs under `backend/` |
-| `cpg0010-caie-drugresponse` | `notebooks/caie_to_anndata.ipynb` | 6 MB | Uses the `Image_Metadata_` prefix |
-| `cpg0012-wawer-bioactivecompoundprofiling` | `notebooks/wawer_to_anndata.ipynb` | 386 MB | CDRP, 153,022 wells, the largest per-plate set |
-| `cpg0014-jump-adipocyte` | `notebooks/jump_adipocyte_to_anndata.ipynb` | 120 MB | Differentiated adipocytes |
-| `cpg0016-jump-assembled` | `notebooks/jump_crispr_to_anndata.ipynb` | 177 MB | Assembled CRISPR arm |
-| `cpg0017-rohban-pathways` | `notebooks/rohban_to_anndata.ipynb` | 12 MB | Gene identity outranks plate |
-| `cpg0020-varchamp` | `notebooks/varchamp_to_anndata.ipynb` | ~90 MB | 20 duplicated plate/well rows |
-| `cpg0021-periscope` | `notebooks/periscope_to_anndata.ipynb` | 216 MB | Pooled optical screen; **an observation is a gene**, one gene-level file of 402 GB |
-| `cpg0022-cmqtl` | `notebooks/cmqtl_to_anndata.ipynb` | ~300 MB | iPSC lines |
-| `cpg0024-bortezomib` | `notebooks/bortezomib_to_anndata.ipynb` | 75 MB | Parquet, unnormalized, scaled before PCA |
-| `cpg0026-lacoste_haghighi-rare-diseases` | `notebooks/rare_diseases_to_anndata.ipynb` | 91 MB | `population_profiles/`; cancer mutations batch |
-| `cpg0028-kelley-resistance` | `notebooks/kelley_to_anndata.ipynb` | 809 MB | `backend/` CSVs; duplicated plate/well rows |
-| `cpg0029-chroma-pilot` | `notebooks/chroma_to_anndata.ipynb` | 7.7 MB | Dye sets differ per batch |
-| `cpg0031-caicedo-cmvip` | `notebooks/luad_to_anndata.ipynb` | 26 MB | LUAD alleles, gene outranks plate |
-| `cpg0032-pooled-rare` | `notebooks/pooled_rare_to_anndata.ipynb` | 3.7 MB | Pooled; observation is a barcode |
-| `cpg0033-oasis-pilot` | `notebooks/oasis_pilot_to_anndata.ipynb` | 11 MB | U2OS and HepaRG |
-| `cpg0005-gerry-bioactivity` | `notebooks/gerry_to_anndata.ipynb` | 62 MB | One flat CSV; the only non-feature column is an opaque `well_profile_id`, so nothing can be tested against the embedding |
-| `cpg0011-lipocyteprofiler` | `notebooks/lipocyte_to_anndata.ipynb` | 16 MB | **Observations are not wells** — aggregated per patient and cell type, 225 rows |
-| `cpg0025-dactyloscopy` | `notebooks/dactyloscopy_to_anndata.ipynb` | 264 MB | `backend/` CSVs; five cell lines |
-| `cpg0037-oasis` | `notebooks/oasis_to_anndata.ipynb` | 52 MB | `axiom` source; 299 duplicated plate/well rows |
-| `cpg0038-tegtmeyer-neuropainting` | `notebooks/neuropainting_to_anndata.ipynb` | 4.5 MB | Astrocytes and neurons, 20x and 63x |
-| `cpg0039-garcia-fossa-livecellpainting` | `notebooks/garcia_fossa_live_to_anndata.ipynb` | 6.1 MB | Live Cell Painting |
-| `cpg0040-garcia-fossa-AgNP` | `notebooks/garcia_fossa_agnp_to_anndata.ipynb` | 288 KB | Nanoparticle size, dose, time |
-| `cpg0047-amish` | `notebooks/amish_to_anndata.ipynb` | 1.2 MB | Cell line, density, timepoint |
+| `cpg0000-jump-pilot` | `notebooks/anndata/cpjump1.ipynb` | 5.5 GB | CPJUMP1, via the paper's GitHub mirror |
+| `cpg0000-jump-pilot` | `notebooks/spatialdata/cpjump1.ipynb` | 700 MB | Images and segmentations of two wells on each of two plates |
+| `cpg0001-cellpainting-protocol` | `notebooks/anndata/cellpainting_protocol.ipynb` | 118 MB | Batches share *no* features; one batch used |
+| `cpg0002-jump-scope` | `notebooks/anndata/jump_scope.ipynb` | 158 MB | Batches are imaging configurations |
+| `cpg0004-lincs` | `notebooks/anndata/lincs.ipynb` | 789 MB | Feature selection per plate, so `_normalized_dmso` |
+| `cpg0006-miami` | `notebooks/anndata/miami.ipynb` | 6.7 MB | |
+| `cpg0008-pki` | `notebooks/anndata/pki.ipynb` | 11 MB | Kinase inhibitors, dose and MoA |
+| `cpg0009-molglue` | `notebooks/anndata/molglue.ipynb` | 267 MB | No `profiles/`; aggregated CSVs under `backend/` |
+| `cpg0010-caie-drugresponse` | `notebooks/anndata/caie.ipynb` | 6 MB | Uses the `Image_Metadata_` prefix |
+| `cpg0012-wawer-bioactivecompoundprofiling` | `notebooks/anndata/wawer.ipynb` | 386 MB | CDRP, 153,022 wells, the largest per-plate set |
+| `cpg0014-jump-adipocyte` | `notebooks/anndata/jump_adipocyte.ipynb` | 120 MB | Differentiated adipocytes |
+| `cpg0016-jump-assembled` | `notebooks/anndata/jump_crispr.ipynb` | 177 MB | Assembled CRISPR arm |
+| `cpg0016-jump` | `notebooks/spatialdata/jump.ipynb` | 480 MB | Images and segmentations of two wells, `source_4` |
+| `cpg0017-rohban-pathways` | `notebooks/anndata/rohban.ipynb` | 12 MB | Gene identity outranks plate |
+| `cpg0017-rohban-pathways` | `notebooks/spatialdata/rohban.ipynb` | 130 MB | Images and segmentations of one well; no stage coordinates |
+| `cpg0020-varchamp` | `notebooks/anndata/varchamp.ipynb` | ~90 MB | 20 duplicated plate/well rows |
+| `cpg0021-periscope` | `notebooks/anndata/periscope.ipynb` | 216 MB | Pooled optical screen; **an observation is a gene**, one gene-level file of 402 GB |
+| `cpg0022-cmqtl` | `notebooks/anndata/cmqtl.ipynb` | ~300 MB | iPSC lines |
+| `cpg0024-bortezomib` | `notebooks/anndata/bortezomib.ipynb` | 75 MB | Parquet, unnormalized, scaled before PCA |
+| `cpg0026-lacoste_haghighi-rare-diseases` | `notebooks/anndata/rare_diseases.ipynb` | 91 MB | `population_profiles/`; cancer mutations batch |
+| `cpg0028-kelley-resistance` | `notebooks/anndata/kelley.ipynb` | 809 MB | `backend/` CSVs; duplicated plate/well rows |
+| `cpg0029-chroma-pilot` | `notebooks/anndata/chroma.ipynb` | 7.7 MB | Dye sets differ per batch |
+| `cpg0029-chroma-pilot` | `notebooks/spatialdata/chroma.ipynb` | 420 MB | Images and segmentations of one well; eight channels |
+| `cpg0031-caicedo-cmvip` | `notebooks/anndata/luad.ipynb` | 26 MB | LUAD alleles, gene outranks plate |
+| `cpg0032-pooled-rare` | `notebooks/anndata/pooled_rare.ipynb` | 3.7 MB | Pooled; observation is a barcode |
+| `cpg0033-oasis-pilot` | `notebooks/anndata/oasis_pilot.ipynb` | 11 MB | U2OS and HepaRG |
+| `cpg0005-gerry-bioactivity` | `notebooks/anndata/gerry.ipynb` | 62 MB | One flat CSV; the only non-feature column is an opaque `well_profile_id`, so nothing can be tested against the embedding |
+| `cpg0011-lipocyteprofiler` | `notebooks/anndata/lipocyte.ipynb` | 16 MB | **Observations are not wells** — aggregated per patient and cell type, 225 rows |
+| `cpg0025-dactyloscopy` | `notebooks/anndata/dactyloscopy.ipynb` | 264 MB | `backend/` CSVs; five cell lines |
+| `cpg0037-oasis` | `notebooks/anndata/oasis.ipynb` | 52 MB | `axiom` source; 299 duplicated plate/well rows |
+| `cpg0038-tegtmeyer-neuropainting` | `notebooks/anndata/neuropainting.ipynb` | 4.5 MB | Astrocytes and neurons, 20x and 63x |
+| `cpg0039-garcia-fossa-livecellpainting` | `notebooks/anndata/garcia_fossa_live.ipynb` | 6.1 MB | Live Cell Painting |
+| `cpg0040-garcia-fossa-AgNP` | `notebooks/anndata/garcia_fossa_agnp.ipynb` | 288 KB | Nanoparticle size, dose, time |
+| `cpg0047-amish` | `notebooks/anndata/amish.ipynb` | 1.2 MB | Cell line, density, timepoint |
 
-[EUbOPEN](https://zenodo.org/records/10894238) is covered by `notebooks/eubopen_to_anndata.ipynb`; it is on Zenodo, not the gallery.
+[EUbOPEN](https://zenodo.org/records/10894238) is covered by `notebooks/anndata/eubopen.ipynb`; it is on Zenodo, not the gallery.
 
 ## Not covered, and why
 
@@ -55,7 +58,7 @@ Each of these was checked by listing the accession's `workspace/` prefixes, not 
 | --- | --- | --- |
 | `cpg0003-rosetta` | `preprocessed_data/` | Re-processed copies of CDRP, LINCS-Pilot1, LUAD and TA-ORF, all already covered here from their own accessions |
 | `cpg0015-heterogeneity` | `supplementary/` | No profile tables published |
-| `cpg0016-jump` (13 sources) | per-source `profiles/` | Superseded by `cpg0016-jump-assembled`, which is the table the field actually uses and which is covered |
+| `cpg0016-jump` (13 sources) | per-source `profiles/` | For profiles, superseded by `cpg0016-jump-assembled`; the images of `source_4` are covered by `notebooks/spatialdata/jump.ipynb` |
 | `cpg0018-singh-seedseq` | nothing under `workspace/` | Images only |
 | `cpg0019-moshkov-deepprofiler` | nothing under `workspace/` | Images and DeepProfiler artefacts only |
 | `cpg0023-mpi` | `scratch/` | Nothing published |
@@ -80,7 +83,7 @@ Annotation tables are read from each study's GitHub repository rather than the I
 
 | Study | Annotation columns | Features | Status |
 | --- | --- | --- | --- |
-| `idr0133-dahlin-cellpainting` | 403 | 372 | `notebooks/idr0133_to_anndata.ipynb` |
+| `idr0133-dahlin-cellpainting` | 403 | 372 | `notebooks/anndata/idr0133.ipynb` |
 | `idr0016-wawer-bioactivecompoundprofiling` | 24 | 0 | annotation only; features are `cpg0012` |
 | `idr0033-rohban-pathways` | 77 | 0 | annotation only; features are `cpg0017` |
 | `idr0088-cox-phenomicprofiling` | 21 | 0 | annotation only |

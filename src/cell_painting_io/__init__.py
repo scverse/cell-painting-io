@@ -196,17 +196,6 @@ def annotate_features(var: pd.DataFrame, *, aliases: Mapping[str, str] = CHANNEL
     var["n_channels"] = np.array([len(c) for c in matched], dtype=np.int8)
 
 
-def categorize(adata: ad.AnnData, columns: Iterable[str]) -> None:
-    """Cast metadata columns to categorical in place.
-
-    Args:
-        adata: The profiles whose `obs` to cast.
-        columns: Names of the `obs` columns to cast.
-    """
-    for column in columns:
-        adata.obs[column] = adata.obs[column].astype("category")
-
-
 def neighbour_enrichment(adata: ad.AnnData, keys: Iterable[str]) -> pd.DataFrame:
     """Measure how much more often neighbours in the kNN graph share a label than chance would give.
 

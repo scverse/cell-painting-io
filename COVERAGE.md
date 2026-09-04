@@ -3,7 +3,7 @@
 ## Cell Painting Gallery
 
 Every accession in `s3://cellpainting-gallery/` — 44, against the ~27 listed on the [dataset page](https://broadinstitute.github.io/cellpainting-gallery/complete_datasets.html).
-Only well-level (or, for the pooled screens, barcode-level) profiles are ever downloaded; no images.
+Only well-level (or, for the pooled screens, barcode-level) profiles are downloaded, with one exception: `cpg0000-jump-pilot` also has a notebook that reads images.
 
 Sizes below are what a notebook actually pulls, not the whole profile tree.
 An earlier version of this file excluded several datasets as "too large" by measuring every profile variant rather than the one a notebook reads; every one of those exclusions turned out to be wrong and they are now covered.
@@ -14,6 +14,7 @@ The remaining exclusions are structural: the accession publishes no profiles, du
 | Accession | Notebook | Downloaded | Notes |
 | --- | --- | --- | --- |
 | `cpg0000-jump-pilot` | `notebooks/cpjump1_to_anndata.ipynb` | 5.5 GB | CPJUMP1, via the paper's GitHub mirror |
+| `cpg0000-jump-pilot` | `notebooks/cpjump1_to_spatialdata.ipynb` | 700 MB | Images and segmentations of two wells on each of two plates |
 | `cpg0001-cellpainting-protocol` | `notebooks/cellpainting_protocol_to_anndata.ipynb` | 118 MB | Batches share *no* features; one batch used |
 | `cpg0002-jump-scope` | `notebooks/jump_scope_to_anndata.ipynb` | 158 MB | Batches are imaging configurations |
 | `cpg0004-lincs` | `notebooks/lincs_to_anndata.ipynb` | 789 MB | Feature selection per plate, so `_normalized_dmso` |

@@ -12,6 +12,8 @@ dependencies = ["anndata", "numpy", "pandas"]
 
 [project.optional-dependencies]
 notebooks = ["scanpy", "umap-learn", "leidenalg", "matplotlib", "pyarrow"]
+spatial = ["scipy", "scikit-image", "spatialdata", "spatialdata-plot", "tifffile"]
+test = ["pytest"]
 
 [tool.ruff]
 line-length = 120
@@ -23,3 +25,6 @@ ignore = [
     "E402", # notebooks import where it reads best
     "B018", # bare expressions render objects in notebooks
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

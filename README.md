@@ -8,7 +8,7 @@ Everything that has differed between datasets is a parameter rather than an assu
 [COVERAGE.md](COVERAGE.md) lists every Cell Painting Gallery and IDR accession with its status, and a reason for each one not covered.
 
 Each notebook starts with the command that fetches its data and a path constant to point at the download.
-None of them need the images.
+All but one of them read profiles only and never touch the images.
 
 | Notebook (in `notebooks/`) | Dataset | Accession | Wells x features |
 | --- | --- | --- | --- |
@@ -45,11 +45,21 @@ None of them need the images.
 | `neuropainting` | Astrocytes and neurons, 20x and 63x | `cpg0038` | 188 x 563 |
 | `garcia_fossa_agnp` | Silver nanoparticles, size and dose | `cpg0040` | 180 x 112 |
 
+## Images
+
+`notebooks/cpjump1_to_spatialdata.ipynb` is the one notebook that goes past the profiles.
+It builds a [SpatialData](https://spatialdata.scverse.org) object per plate of the JUMP pilot (`cpg0000`): fields of view as Images, the CellProfiler Nuclei, Cells and Cytoplasm segmentations as Labels, one circle per well as Shapes, and both the well-level profile and the per-cell measurements as Tables.
+A field, its well and its plate are three coordinate systems related by translations, read off the stage coordinates the microscope recorded, so the fields of a well lay out as a mosaic and the wells as a plate map.
+Element names carry the plate barcode, so two plate objects concatenate without renaming.
+
+The gallery publishes object outlines rather than segmentation masks, so the Labels are reconstructed from them; `cell_painting_io.spatial` holds that and the coordinate arithmetic.
+Only two wells of each of two plates are downloaded, roughly 700 MB, against tens of terabytes of images for this accession alone.
+
 ## Environment
 
 ```bash
 mamba create -n cell-painting-io -c conda-forge python=3.14 anndata scanpy pandas numpy umap-learn leidenalg matplotlib jupyterlab
-pip install -e .
+pip install -e '.[notebooks,spatial,test]'
 prek install
 ```
 

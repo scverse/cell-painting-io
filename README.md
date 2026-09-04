@@ -5,7 +5,7 @@ Experimental! A collection of scripts &amp; utilities to get Cell Painting datas
 `src/cell_painting_io/` holds the dataset-agnostic parts; each notebook in `notebooks/` adds only what its dataset needs.
 Everything that has differed between datasets is a parameter rather than an assumption — missing-value sentinels, metadata prefixes, channel naming, columns that disagree across plates, features that are blown up or constant.
 
-[COVERAGE.md](COVERAGE.md) lists every Cell Painting Gallery and IDR accession with its status, and a reason for each one not covered.
+[COVERAGE.md](COVERAGE.md) lists every Cell Painting Gallery and IDR accession with its status, a reason for each one not covered, and the BioImage Archive Cell Painting studies that publish profiles nowhere else.
 
 Each notebook starts with the command that fetches its data and a path constant to point at the download.
 All but one of them read profiles only and never touch the images.
@@ -33,6 +33,7 @@ All but one of them read profiles only and never touch the images.
 | `molglue` | Molecular glues | `cpg0009` | 1,920 x 7,587 |
 | `kelley` | Bortezomib resistance | `cpg0028` | 1,920 x 221 |
 | `rohban` | TA-ORF, 323 genes overexpressed | `cpg0017` | 1,918 x 847 |
+| `spheroid_3d` | 3D colorectal spheroids, HCT116 and HT29, 52 drugs | `S-BIAD2254` | 1,607 x 472 |
 | `jump_scope` | JUMP-SCOPE, microscopes and settings | `cpg0002` | 1,529 x 819 |
 | `miami` | MIAMI | `cpg0006` | 1,387 x 264 |
 | `bortezomib` | Bortezomib clones, unnormalized parquet | `cpg0024` | 768 x 4,695 |

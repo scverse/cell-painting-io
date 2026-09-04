@@ -126,3 +126,10 @@ def test_labels_from_outlines_area_check_can_be_turned_off() -> None:
 
     assert not labels_from_outlines(_outlined(truth), centres).any()
     assert labels_from_outlines(_outlined(truth), centres, area_column=None).any()
+
+
+def test_labels_from_outlines_with_no_objects() -> None:
+    centres = _centres([], [], [], [])
+    labels = labels_from_outlines(np.zeros((8, 8), np.uint8), centres)
+    assert labels.shape == (8, 8)
+    assert not labels.any()

@@ -138,6 +138,8 @@ def labels_from_outlines(
     mask = np.asarray(outlines) > 0
     if mask.ndim != 2:
         raise ValueError(f"expected a 2D outline image, got shape {mask.shape}")
+    if centres.empty:
+        return np.zeros(mask.shape, np.uint32)
     components, n_components = ndi.label(ndi.binary_fill_holes(~mask) & ~mask)
 
     rows = np.rint(centres[y_column].to_numpy(float)).astype(int).clip(0, mask.shape[0] - 1)
@@ -167,6 +169,8 @@ def labels_from_outlines(
 
 def _load_data(root: Path, batch: str, plate: str) -> pd.DataFrame:
     frame = pd.read_csv(root / "workspace/load_data_csv" / batch / plate / "load_data.csv")
+    if "Metadata_Well" not in frame.columns:
+        raise ValueError("load_data.csv does not name the well of each field")
     return frame.set_index(["Metadata_Well", "Metadata_Site"]).rename_axis(["well", "site"]).sort_index()
 
 
@@ -240,7 +244,7 @@ def _site_labels(directory: Path, well: str, site: int) -> dict[str, npt.NDArray
         path = _outline_file(directory, well, site, kind)
         if path is None or not (directory / f"{csv}.csv").exists():
             return {}
-        outlines = iio.imread(path)
+        outlines = np.squeeze(iio.imread(path))
         if outlines.ndim != 2:
             # some sources publish a colour overlay of the outlines on the image rather than the outlines alone
             return {}
@@ -308,6 +312,7 @@ def read_plate(
     plate: str,
     *,
     wells: Sequence[str] | None = None,
+    plane: int | None = None,
     profile: str | Path | None = "normalized_feature_select_negcon_batch",
     plate_format: int = 384,
 ) -> SpatialData:
@@ -324,8 +329,8 @@ def read_plate(
     Where the source recorded stage coordinates, every element is placed in three coordinate systems, named
     `{plate}_{well}_s{site}`, `{plate}_{well}` and `{plate}`, so the fields of a well lay out as a mosaic and the
     wells as a plate map.
-    Where it did not, each field can only sit in its own frame, and the well shapes are left out along with the
-    plate frame they would live in.
+    Where it did not, or where it left out the pixel size those coordinates would be converted with, each field
+    can only sit in its own frame, and the well shapes are left out along with the plate frame they would live in.
     Element names are prefixed with the plate barcode either way, so two plates concatenate without renaming.
 
     The gallery is uneven about what it publishes.
@@ -341,6 +346,8 @@ def read_plate(
         plate: Plate barcode.
         wells: Wells to read images and labels for. Defaults to every well whose images are present under `root`,
             so that a partial download reads back as itself. The well table always covers the whole plate.
+        plane: Which `Metadata_PlaneID` to read where a source imaged a z stack. Required in that case, since
+            there is no reason to prefer one plane over another and taking one silently would hide the rest.
         profile: Variant of the well-level profile, read as `workspace/profiles/{batch}/{plate}/{plate}_{profile}.csv.gz`.
             Sources that publish the profile under another name, `{plate}.parquet` among them, take a path instead.
             Pass `None` to leave out the well table and the well shapes.
@@ -357,8 +364,18 @@ def read_plate(
     """
     root = Path(root)
     load_data = _load_data(root, batch, plate)
+    if load_data.index.duplicated().any():
+        planes = sorted(load_data["Metadata_PlaneID"].unique()) if "Metadata_PlaneID" in load_data else []
+        if plane is None:
+            raise ValueError(f"{plate} has several rows per field; pass plane= to choose one of {planes}")
+        load_data = load_data[load_data["Metadata_PlaneID"] == plane]
     channels = _channels(load_data)
-    located = {"Metadata_PositionX", "Metadata_PositionY"}.issubset(load_data.columns)
+    located = {
+        "Metadata_PositionX",
+        "Metadata_PositionY",
+        "Metadata_ImageResolutionX",
+        "Metadata_ImageResolutionY",
+    }.issubset(load_data.columns)
     if located:
         pixel_size = _pixel_size(load_data)
         offsets = fov_offsets(

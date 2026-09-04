@@ -50,18 +50,36 @@ All but one of them read profiles only and never touch the images.
 `cell_painting_io.read_plate` reads one plate of a Cell Painting Gallery source into a [SpatialData](https://spatialdata.scverse.org) object: fields of view as Images, the CellProfiler Nuclei, Cells and Cytoplasm segmentations as Labels, the wells as Shapes, and the well- and cell-level measurements as Tables.
 Elements carry the plate barcode in their names, so two plates concatenate.
 
-Where the source recorded stage coordinates, every element sits in a field, a well and a plate coordinate system, so the fields of a well lay out as a mosaic and the wells as a plate map.
+Where the source recorded stage coordinates and the pixel size to convert them with, every element sits in a field, a well and a plate coordinate system, so the fields of a well lay out as a mosaic and the wells as a plate map.
 Where it did not, each field can only sit in its own frame, and `read_plate` degrades to that rather than inventing a layout.
 
 The gallery publishes one-pixel object outlines rather than segmentation masks, so the Labels are reconstructed from them, keeping CellProfiler's object numbers so the per-object tables join onto them.
-A component is only accepted when exactly one object centroid falls in it and its area is close to the area CellProfiler measured, so every label stands for one object rather than for a guess; across the four plates below that reproduces 14,500 object areas to a median ratio of 0.999.
+A component is only accepted when exactly one object centroid falls in it and its area is close to the area CellProfiler measured, so every label stands for one object rather than for a guess.
 
-| Notebook (in `notebooks/spatialdata/`) | Accession | Downloaded | What it adds |
-| --- | --- | --- | --- |
-| `cpjump1` | `cpg0000-jump-pilot` | 700 MB | Two plates, concatenated |
-| `jump` | `cpg0016-jump` | 480 MB | Production JUMP; profile is `{plate}.parquet` |
-| `chroma` | `cpg0029-chroma-pilot` | 420 MB | Eight channels; images named by `FileName_`/`PathName_` |
-| `rohban` | `cpg0017-rohban-pathways` | 130 MB | No stage coordinates, so fields only |
+`notebooks/spatialdata/fetch.py` downloads one well of one plate, which is what each notebook works from.
+Every accession below reads with the same two lines; the last column is the one thing about it that is not like the others.
+
+| Notebook (in `notebooks/spatialdata/`) | Accession | What it adds |
+| --- | --- | --- |
+| `cpjump1` | `cpg0000-jump-pilot` | Two plates, concatenated |
+| `cellpainting_protocol` | `cpg0001-cellpainting-protocol` | Only some fields of a well were analysed |
+| `jump_scope` | `cpg0002-jump-scope` | Profile under `backend/`; no stage coordinates |
+| `miami` | `cpg0006-miami` |  |
+| `pki` | `cpg0008-pki` |  |
+| `wawer` | `cpg0012-wawer-bioactivecompoundprofiling` | Lower-case wells; no stage coordinates |
+| `jump_adipocyte` | `cpg0014-jump-adipocyte` | Profile under `backend/` |
+| `jump_source1` | `cpg0016-jump` | 1536-well plate |
+| `jump` | `cpg0016-jump` | Profile is `{plate}.parquet` |
+| `rohban` | `cpg0017-rohban-pathways` | No stage coordinates, so fields only |
+| `cmqtl` | `cpg0022-cmqtl` | Profile is an uncompressed CSV |
+| `bortezomib` | `cpg0024-bortezomib` | No stage coordinates |
+| `dactyloscopy` | `cpg0025-dactyloscopy` | 2160x2160 fields; outlines carry a singleton axis |
+| `chroma` | `cpg0029-chroma-pilot` | Eight channels; images named by `FileName_`/`PathName_` |
+| `caicedo_cmvip` | `cpg0031-caicedo-cmvip` | Lower-case wells; no stage coordinates |
+| `oasis_pilot` | `cpg0033-oasis-pilot` |  |
+| `oasis` | `cpg0037-oasis` | Stage coordinates but no pixel size, so fields only |
+| `neuropainting` | `cpg0038-tegtmeyer-neuropainting` | z stacks, so `plane` picks one |
+| `amish` | `cpg0047-amish` |  |
 
 ## Environment
 

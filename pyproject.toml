@@ -7,7 +7,7 @@ name = "cell-painting-io"
 version = "0.1.0"
 description = "Read Cell Painting datasets into scverse data structures"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = ["anndata", "numpy", "pandas"]
 
 [project.optional-dependencies]

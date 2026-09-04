@@ -13,7 +13,7 @@ from geopandas import GeoDataFrame
 from scipy import ndimage as ndi
 from shapely import Point
 from skimage.segmentation import expand_labels
-from spatialdata import SpatialData
+from spatialdata import SpatialData, sanitize_table
 from spatialdata.models import Image2DModel, Labels2DModel, ShapesModel, TableModel
 from spatialdata.transformations import Identity, Translation
 
@@ -99,6 +99,8 @@ def labels_from_outlines(
     x_column: str = "Location_Center_X",
     y_column: str = "Location_Center_Y",
     object_column: str = "ObjectNumber",
+    area_column: str | None = "AreaShape_Area",
+    max_area_ratio: float = 1.25,
 ) -> npt.NDArray[np.uint32]:
     """Turn a CellProfiler outline image back into a label image carrying the CellProfiler object numbers.
 
@@ -109,9 +111,12 @@ def labels_from_outlines(
     the background, and anything else the outlines close off - are dropped.
     The boundary is then grown back one pixel, which reproduces the CellProfiler areas to well under a percent.
 
-    A component holding several centroids, which happens where an outline failed to close, keeps the lowest
-    object number, so the objects that lost it are absent from the result.
-    Compare the number of labels against the number of centroids to catch that.
+    A component is only taken when it unambiguously belongs to one object: exactly one centroid falls in it, and
+    its area is within `max_area_ratio` of the area CellProfiler measured.
+    That rejects the two ways an unclosed outline goes wrong - two objects merging into one component, and a
+    centroid landing in the background or in a fragment of its object - so every label in the result stands for
+    one CellProfiler object rather than for a guess.
+    Objects whose component was rejected are absent; compare the number of labels against the number of centroids.
 
     Args:
         outlines: A 2D outline image, anything above zero being outline.
@@ -119,6 +124,10 @@ def labels_from_outlines(
         x_column: Column of `centres` holding the centroid column index.
         y_column: Column of `centres` holding the centroid row index.
         object_column: Column of `centres` holding the object number, which becomes the label value.
+        area_column: Column of `centres` holding the area CellProfiler measured, used to reject components that
+            cannot be the object. Pass `None`, or leave the column out of `centres`, to skip that check.
+        max_area_ratio: How far a component's area may differ from the measured area, either way, and still be
+            accepted. Reconstruction is exact to a fraction of a percent when it works, so the default is tight.
 
     Returns:
         A label image the shape of `outlines`, zero outside objects.
@@ -129,20 +138,39 @@ def labels_from_outlines(
     mask = np.asarray(outlines) > 0
     if mask.ndim != 2:
         raise ValueError(f"expected a 2D outline image, got shape {mask.shape}")
+    if centres.empty:
+        return np.zeros(mask.shape, np.uint32)
     components, n_components = ndi.label(ndi.binary_fill_holes(~mask) & ~mask)
 
     rows = np.rint(centres[y_column].to_numpy(float)).astype(int).clip(0, mask.shape[0] - 1)
     columns = np.rint(centres[x_column].to_numpy(float)).astype(int).clip(0, mask.shape[1] - 1)
     numbers = centres[object_column].to_numpy()
-    order = np.argsort(numbers)[::-1]
+    areas = centres[area_column].to_numpy(float) if area_column is not None and area_column in centres else None
+    hit = components[rows, columns]
+    if areas is not None:
+        # an interior is always smaller than the object, so only the upper bound means anything here; it is what
+        # catches a centroid that landed in the background
+        sizes = np.bincount(components.ravel(), minlength=n_components + 1)
+        hit = np.where(sizes[hit] > max_area_ratio * areas, 0, hit)
+    claims = np.bincount(hit, minlength=n_components + 1)
+    hit = np.where(claims[hit] > 1, 0, hit)
+
     lookup = np.zeros(n_components + 1, dtype=np.uint32)
-    lookup[components[rows, columns][order]] = numbers[order]
+    lookup[hit] = numbers
     lookup[0] = 0
-    return expand_labels(lookup[components], distance=1).astype(np.uint32)
+    labels = expand_labels(lookup[components], distance=1).astype(np.uint32)
+
+    if areas is not None:
+        grown = np.bincount(labels.ravel(), minlength=int(numbers.max()) + 1)[numbers] / areas
+        rejected = numbers[(grown > max_area_ratio) | (grown < 1 / max_area_ratio)]
+        labels[np.isin(labels, rejected)] = 0
+    return labels
 
 
 def _load_data(root: Path, batch: str, plate: str) -> pd.DataFrame:
     frame = pd.read_csv(root / "workspace/load_data_csv" / batch / plate / "load_data.csv")
+    if "Metadata_Well" not in frame.columns:
+        raise ValueError("load_data.csv does not name the well of each field")
     return frame.set_index(["Metadata_Well", "Metadata_Site"]).rename_axis(["well", "site"]).sort_index()
 
 
@@ -153,29 +181,99 @@ def _pixel_size(load_data: pd.DataFrame) -> float:
     return float(sizes.item())
 
 
-def _image_path(root: Path, batch: str, url: str) -> Path:
-    marker = f"/images/{batch}/images/"
-    if marker not in url:
-        raise ValueError(f"image URL does not follow the gallery layout: {url}")
-    return root / "images" / url[url.index(marker) + len("/images/") :]
+def _channels(load_data: pd.DataFrame) -> tuple[str, list[str]]:
+    for prefix in ("URL_Orig", "FileName_Orig", "URL_", "FileName_"):
+        names = [c.removeprefix(prefix) for c in load_data.columns if c.startswith(prefix)]
+        names = [name for name in names if not name.startswith("Illum")]
+        if names:
+            return prefix, names
+    raise ValueError("load_data.csv does not name the image of each channel")
 
 
-def _read_fov(root: Path, batch: str, row: pd.Series, channels: Sequence[str]) -> npt.NDArray:
-    return np.stack([iio.imread(_image_path(root, batch, row[f"URL_Orig{channel}"])) for channel in channels])
+def _image_path(root: Path, batch: str, row: pd.Series, prefix: str, channel: str) -> Path:
+    """Locate a channel of one field under `root`.
+
+    Sources record images either as an `URL_*` S3 URI or as a `FileName_*`/`PathName_*` pair whose path is
+    wherever the images sat when CellProfiler ran.
+    Both end in the gallery's own `<batch>/images/<acquisition>/Images/` layout, which is what is matched on.
+    """
+    if prefix.startswith("URL_"):
+        location = str(row[f"{prefix}{channel}"])
+    else:
+        directory = row[f"PathName_{prefix.removeprefix('FileName_')}{channel}"]
+        location = f"{directory}/{row[f'{prefix}{channel}']}"
+    marker = f"/{batch}/images/"
+    if marker not in location:
+        raise ValueError(f"image location does not follow the gallery layout: {location}")
+    return root / "images" / location[location.index(marker) + 1 :]
+
+
+def _read_fov(root: Path, batch: str, row: pd.Series, prefix: str, channels: Sequence[str]) -> npt.NDArray:
+    return np.stack([iio.imread(_image_path(root, batch, row, prefix, channel)) for channel in channels])
 
 
 def _site_dir(root: Path, batch: str, plate: str, well: str, site: int) -> Path:
     return root / "workspace/analysis" / batch / plate / "analysis" / f"{plate}-{well}-{site}"
 
 
+def _outline_file(directory: Path, well: str, site: int, kind: str) -> Path | None:
+    """Find one outline image, whatever the source called it.
+
+    Seen across the gallery: `outlines/A01_s1--cell_outlines.png`, `outlines/a01_1--cell_outlines.png` and, in a
+    directory named after the plate, `A01_s1_cell_outlines.tiff`.
+    """
+    for stem in (
+        f"{well}_s{site}--{kind}_outlines",
+        f"{well}_{site}--{kind}_outlines",
+        f"{well}_s{site}_{kind}_outlines",
+    ):
+        matches = sorted(directory.glob(f"{stem}.*")) + sorted(directory.glob(f"*/{stem}.*"))
+        if matches:
+            return matches[0]
+    return None
+
+
+def _outline_candidates(image: npt.NDArray) -> list[npt.NDArray[np.bool_]]:
+    """The ways an outline image might encode its outlines, best guess first.
+
+    Most sources publish the outlines on their own. Some draw them in colour over the greyscale image, in which
+    case the outline is what is not grey - but a single image can carry two object types in two colours, so each
+    colour is also offered on its own and the caller keeps whichever reconstructs the most objects.
+    """
+    if image.ndim == 2:
+        return [image > 0]
+    if image.ndim != 3 or image.shape[-1] not in (3, 4):
+        return []
+    channels = image[..., :3].astype(np.int16)
+    coloured = (channels[..., 0] != channels[..., 1]) | (channels[..., 1] != channels[..., 2])
+    colours = np.unique(channels[coloured].reshape(-1, 3), axis=0)
+    if len(colours) < 2:
+        return [coloured]
+    return [coloured, *((channels == colour).all(axis=-1) for colour in colours)]
+
+
+def _centre_columns(objects: pd.DataFrame) -> tuple[str, str]:
+    for prefix in ("Location_Center", "AreaShape_Center"):
+        if {f"{prefix}_X", f"{prefix}_Y"}.issubset(objects.columns):
+            return f"{prefix}_X", f"{prefix}_Y"
+    raise ValueError("object table has neither Location_Center nor AreaShape_Center columns")
+
+
 def _site_labels(directory: Path, well: str, site: int) -> dict[str, npt.NDArray[np.uint32]]:
-    masks = {
-        name: labels_from_outlines(
-            iio.imread(directory / "outlines" / f"{well}_s{site}--{outline}_outlines.png"),
-            pd.read_csv(directory / f"{csv}.csv"),
-        )
-        for name, outline, csv in (("nuclei", "nuclei", "Nuclei"), ("cells", "cell", "Cells"))
-    }
+    masks = {}
+    for name, kind, csv in (("nuclei", "nuclei", "Nuclei"), ("cells", "cell", "Cells")):
+        path = _outline_file(directory, well, site, kind)
+        if path is None or not (directory / f"{csv}.csv").exists():
+            return {}
+        candidates = _outline_candidates(np.squeeze(iio.imread(path)))
+        if not candidates:
+            return {}
+        objects = pd.read_csv(directory / f"{csv}.csv")
+        x_column, y_column = _centre_columns(objects)
+        reconstructed = [
+            labels_from_outlines(candidate, objects, x_column=x_column, y_column=y_column) for candidate in candidates
+        ]
+        masks[name] = max(reconstructed, key=lambda labels: len(np.unique(labels)))
     masks["cytoplasm"] = np.where(masks["nuclei"] > 0, 0, masks["cells"])
     return masks
 
@@ -195,9 +293,13 @@ def _well_shapes(load_data: pd.DataFrame, *, pixel_size: float, plate_format: in
     return ShapesModel.parse(frame, transformations={system: Identity()})
 
 
-def _well_table(path: Path, *, region: str, plate_format: int) -> ad.AnnData:
+def _well_table(path: Path, *, region: str | None, plate_format: int) -> ad.AnnData:
     adata = read_profiles(path, index_columns=("Plate", "Well"))
     annotate_features(adata.var)
+    # some sources annotate wells with column names SpatialData rejects, "Common Name" among them
+    sanitize_table(adata)
+    if region is None:
+        return TableModel.parse(adata)
     grid = np.array([parse_well(well) for well in adata.obs["Well"]])
     adata.obs["well_index"] = grid[:, 0] * PLATE_FORMATS[plate_format][1] + grid[:, 1]
     adata.obs["region"] = pd.Categorical([region] * adata.n_obs)
@@ -221,6 +323,7 @@ def _cell_table(files: Sequence[Path], masks: Mapping[str, npt.NDArray]) -> ad.A
         keep[rows] = np.isin(numbers[rows], np.unique(mask))
     adata = adata[keep].copy()
     adata.obs["region"] = adata.obs["region"].cat.remove_unused_categories()
+    sanitize_table(adata)
     return TableModel.parse(
         adata, region=sorted(adata.obs["region"].cat.categories), region_key="region", instance_key="ObjectNumber"
     )
@@ -232,24 +335,33 @@ def read_plate(
     plate: str,
     *,
     wells: Sequence[str] | None = None,
-    profile: str | None = "normalized_feature_select_negcon_batch",
+    plane: int | None = None,
+    profile: str | Path | None = "normalized_feature_select_negcon_batch",
     plate_format: int = 384,
 ) -> SpatialData:
     """Read one plate of a Cell Painting Gallery source into a SpatialData object.
 
-    Fields of view become Images, one element per field with a channel per `URL_Orig*` column of `load_data.csv`.
+    Fields of view become Images, one element per field with a channel per `URL_Orig*` or `FileName_Orig*` column
+    of `load_data.csv`.
     The CellProfiler Nuclei, Cells and Cytoplasm segmentations become Labels, reconstructed from the published
     outlines by `labels_from_outlines` and carrying CellProfiler's own object numbers.
     The wells of the plate become Shapes, and the well- and cell-level measurements become Tables named
     `wells` and `cells`, each annotating the elements above.
     Cytoplasm is the cell mask minus the nucleus mask, as CellProfiler defines it, so it needs no files of its own.
 
-    Every element is placed in three coordinate systems, named `{plate}_{well}_s{site}`, `{plate}_{well}` and
-    `{plate}`, and every element name is prefixed with the plate barcode, so two plates concatenate without renaming.
+    Where the source recorded stage coordinates, every element is placed in three coordinate systems, named
+    `{plate}_{well}_s{site}`, `{plate}_{well}` and `{plate}`, so the fields of a well lay out as a mosaic and the
+    wells as a plate map.
+    Where it did not, or where it left out the pixel size those coordinates would be converted with, each field
+    can only sit in its own frame, and the well shapes are left out along with the plate frame they would live in.
+    Element names are prefixed with the plate barcode either way, so two plates concatenate without renaming.
 
-    A field contributes an image whether or not CellProfiler output exists for it on the gallery, and labels only
-    when it does; rows of the cell table whose object did not survive the outline reconstruction are dropped, so
-    that every row points at a label that exists.
+    The gallery is uneven about what it publishes.
+    A field contributes an image whether or not CellProfiler output exists for it, and labels only when that
+    output includes outlines it can use; sources that publish a colour overlay instead of the outlines alone, or
+    that pool a whole well into one analysis directory, yield images and tables but no labels.
+    Rows of the cell table whose object did not survive the outline reconstruction are dropped, so that every row
+    points at a label that exists.
 
     Args:
         root: Directory holding the `images/` and `workspace/` trees of one source of one accession.
@@ -257,63 +369,77 @@ def read_plate(
         plate: Plate barcode.
         wells: Wells to read images and labels for. Defaults to every well whose images are present under `root`,
             so that a partial download reads back as itself. The well table always covers the whole plate.
-        profile: Variant of the well-level profile under `workspace/profiles/`, read as
-            `{plate}_{profile}.csv.gz`. Pass `None` to leave out the well table and the well shapes.
+        plane: Which `Metadata_PlaneID` to read where a source imaged a z stack. Required in that case, since
+            there is no reason to prefer one plane over another and taking one silently would hide the rest.
+        profile: Variant of the well-level profile, read as `workspace/profiles/{batch}/{plate}/{plate}_{profile}.csv.gz`.
+            Sources that publish the profile under another name, `{plate}.parquet` among them, take a path instead.
+            Pass `None` to leave out the well table and the well shapes.
         plate_format: Number of wells on the plate, used to place the wells on their nominal grid.
 
     Returns:
         The plate, with Images, Labels, Shapes and the `wells` and `cells` Tables.
-        A table is left out when nothing it would annotate was read.
+        A table or element group is left out when nothing it would hold was read.
 
     Raises:
-        ValueError: The plate mixes pixel sizes, or an image URL does not follow the gallery layout.
+        ValueError: The plate mixes pixel sizes, `load_data.csv` names its images in an unknown way, or an image
+            does not sit in the gallery layout.
         FileNotFoundError: `load_data.csv` or the requested profile is missing.
     """
     root = Path(root)
     load_data = _load_data(root, batch, plate)
-    pixel_size = _pixel_size(load_data)
-    channels = [c.removeprefix("URL_Orig") for c in load_data.columns if c.startswith("URL_Orig")]
-    offsets = fov_offsets(
-        pd.DataFrame(
-            {
-                "well": load_data.index.get_level_values("well"),
-                "x": load_data["Metadata_PositionX"].to_numpy(float),
-                "y": load_data["Metadata_PositionY"].to_numpy(float),
-            },
-            index=load_data.index,
-        ),
-        pixel_size=pixel_size,
-        plate_format=plate_format,
-    )
+    if load_data.index.duplicated().any():
+        planes = sorted(load_data["Metadata_PlaneID"].unique()) if "Metadata_PlaneID" in load_data else []
+        if plane is None:
+            raise ValueError(f"{plate} has several rows per field; pass plane= to choose one of {planes}")
+        load_data = load_data[load_data["Metadata_PlaneID"] == plane]
+    prefix, channels = _channels(load_data)
+    located = {
+        "Metadata_PositionX",
+        "Metadata_PositionY",
+        "Metadata_ImageResolutionX",
+        "Metadata_ImageResolutionY",
+    }.issubset(load_data.columns)
+    if located:
+        pixel_size = _pixel_size(load_data)
+        offsets = fov_offsets(
+            pd.DataFrame(
+                {
+                    "well": load_data.index.get_level_values("well"),
+                    "x": load_data["Metadata_PositionX"].to_numpy(float),
+                    "y": load_data["Metadata_PositionY"].to_numpy(float),
+                },
+                index=load_data.index,
+            ),
+            pixel_size=pixel_size,
+            plate_format=plate_format,
+        )
 
     if wells is None:
         first = load_data.groupby(level="well").head(1)
-        wells = [
-            key[0] for key, row in first.iterrows() if _image_path(root, batch, row[f"URL_Orig{channels[0]}"]).exists()
-        ]
+        wells = [key[0] for key, row in first.iterrows() if _image_path(root, batch, row, prefix, channels[0]).exists()]
 
     images, labels, masks, analysed = {}, {}, {}, []
     for well in wells:
         for site in sorted(load_data.loc[well].index):
             fov = f"{plate}_{well}_s{site}"
-            offset = offsets.loc[(well, site)]
-            transformations = {
-                fov: Identity(),
-                f"{plate}_{well}": Translation([offset["well_y"], offset["well_x"]], axes=("y", "x")),
-                plate: Translation([offset["plate_y"], offset["plate_x"]], axes=("y", "x")),
-            }
+            transformations: dict[str, Identity | Translation] = {fov: Identity()}
+            if located:
+                offset = offsets.loc[(well, site)]
+                transformations[f"{plate}_{well}"] = Translation([offset["well_y"], offset["well_x"]], axes=("y", "x"))
+                transformations[plate] = Translation([offset["plate_y"], offset["plate_x"]], axes=("y", "x"))
             images[f"{fov}_image"] = Image2DModel.parse(
-                _read_fov(root, batch, load_data.loc[(well, site)], channels),
+                _read_fov(root, batch, load_data.loc[(well, site)], prefix, channels),
                 dims=("c", "y", "x"),
                 c_coords=channels,
                 transformations=transformations,
                 scale_factors=[2, 2],
             )
             directory = _site_dir(root, batch, plate, well, site)
-            if not directory.is_dir():
+            site_labels = _site_labels(directory, well, site) if directory.is_dir() else {}
+            if not site_labels:
                 continue
             analysed.append(directory / "Cells.csv")
-            for name, mask in _site_labels(directory, well, site).items():
+            for name, mask in site_labels.items():
                 masks[f"{fov}_{name}"] = mask
                 labels[f"{fov}_{name}"] = Labels2DModel.parse(mask, dims=("y", "x"), transformations=transformations)
 
@@ -321,9 +447,14 @@ def read_plate(
     if analysed:
         tables["cells"] = _cell_table(analysed, {k: v for k, v in masks.items() if k.endswith("_cells")})
     if profile is not None:
-        path = root / "workspace/profiles" / batch / plate / f"{plate}_{profile}.csv.gz"
-        tables["wells"] = _well_table(path, region=f"{plate}_wells", plate_format=plate_format)
-        shapes[f"{plate}_wells"] = _well_shapes(
-            load_data, pixel_size=pixel_size, plate_format=plate_format, system=plate
+        path = (
+            Path(profile)
+            if isinstance(profile, Path)
+            else root / "workspace/profiles" / batch / plate / f"{plate}_{profile}.csv.gz"
         )
+        tables["wells"] = _well_table(path, region=f"{plate}_wells" if located else None, plate_format=plate_format)
+        if located:
+            shapes[f"{plate}_wells"] = _well_shapes(
+                load_data, pixel_size=pixel_size, plate_format=plate_format, system=plate
+            )
     return SpatialData(images=images, labels=labels, shapes=shapes, tables=tables)

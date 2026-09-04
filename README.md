@@ -10,7 +10,7 @@ Everything that has differed between datasets is a parameter rather than an assu
 Each notebook starts with the command that fetches its data and a path constant to point at the download.
 All but one of them read profiles only and never touch the images.
 
-| Notebook (in `notebooks/`) | Dataset | Accession | Wells x features |
+| Notebook (in `notebooks/anndata/`) | Dataset | Accession | Wells x features |
 | --- | --- | --- | --- |
 | `wawer` | CDRP bioactives, 30k compounds | `cpg0012` | 153,022 x 781 |
 | `lincs` | LINCS, 1,571 compounds at six doses | `cpg0004` | 52,223 x 1,603 |
@@ -48,11 +48,41 @@ All but one of them read profiles only and never touch the images.
 ## Images
 
 `cell_painting_io.read_plate` reads one plate of a Cell Painting Gallery source into a [SpatialData](https://spatialdata.scverse.org) object: fields of view as Images, the CellProfiler Nuclei, Cells and Cytoplasm segmentations as Labels, the wells as Shapes, and the well- and cell-level measurements as Tables.
-Every element sits in a field, a well and a plate coordinate system, built from the stage coordinates the microscope recorded, and carries the plate barcode in its name so two plates concatenate.
+Elements carry the plate barcode in their names, so two plates concatenate.
 
-The gallery publishes one-pixel object outlines rather than segmentation masks, so the Labels are reconstructed from them, keeping CellProfiler's object numbers so the per-object tables join onto them.
+Where the source recorded stage coordinates and the pixel size to convert them with, every element sits in a field, a well and a plate coordinate system, so the fields of a well lay out as a mosaic and the wells as a plate map.
+Where it did not, each field can only sit in its own frame, and `read_plate` degrades to that rather than inventing a layout.
 
-`notebooks/cpjump1_to_spatialdata.ipynb` runs it on two wells of two JUMP pilot plates, roughly 700 MB against the tens of terabytes of images for that accession.
+The gallery publishes one-pixel object outlines rather than segmentation masks, sometimes on their own and sometimes drawn in colour over the image, so the Labels are reconstructed from them, keeping CellProfiler's object numbers so the per-object tables join onto them.
+A component is only accepted when exactly one object centroid falls in it and its area is close to the area CellProfiler measured, so every label stands for one object rather than for a guess.
+
+`notebooks/spatialdata/fetch.py` downloads one well of one plate, which is what each notebook works from.
+Every accession below reads with the same two lines; the last column is the one thing about it that is not like the others.
+
+| Notebook (in `notebooks/spatialdata/`) | Accession | What it adds |
+| --- | --- | --- |
+| `cpjump1` | `cpg0000-jump-pilot` | Two plates, concatenated |
+| `cellpainting_protocol` | `cpg0001-cellpainting-protocol` | Only some fields of a well were analysed |
+| `jump_scope` | `cpg0002-jump-scope` | Profile under `backend/`; no stage coordinates |
+| `miami` | `cpg0006-miami` |  |
+| `pki` | `cpg0008-pki` |  |
+| `wawer` | `cpg0012-wawer-bioactivecompoundprofiling` | Lower-case wells; no stage coordinates |
+| `jump_adipocyte` | `cpg0014-jump-adipocyte` | Profile under `backend/` |
+| `jump_source1` | `cpg0016-jump` | 1536-well plate |
+| `jump` | `cpg0016-jump` | Profile is `{plate}.parquet` |
+| `rohban` | `cpg0017-rohban-pathways` | No stage coordinates, so fields only |
+| `varchamp` | `cpg0020-varchamp` | Outlines drawn in colour, two object types in one image |
+| `cmqtl` | `cpg0022-cmqtl` | Profile is an uncompressed CSV |
+| `bortezomib` | `cpg0024-bortezomib` | No stage coordinates |
+| `dactyloscopy` | `cpg0025-dactyloscopy` | 2160x2160 fields; outlines carry a singleton axis |
+| `rare_diseases` | `cpg0026-lacoste_haghighi-rare-diseases` | Colour outlines; no well-level profile published |
+| `chroma` | `cpg0029-chroma-pilot` | Eight channels; images named by `FileName_`/`PathName_` |
+| `caicedo_cmvip` | `cpg0031-caicedo-cmvip` | Lower-case wells; no stage coordinates |
+| `oasis_pilot` | `cpg0033-oasis-pilot` |  |
+| `oasis` | `cpg0037-oasis` | Stage coordinates but no pixel size, so fields only |
+| `neuropainting` | `cpg0038-tegtmeyer-neuropainting` | z stacks, so `plane` picks one |
+| `garcia_fossa_agnp` | `cpg0040-garcia-fossa-AgNP` | Two channels named without `Orig`; colour outlines |
+| `amish` | `cpg0047-amish` |  |
 
 ## Environment
 

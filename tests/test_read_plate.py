@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import spatialdata as sd
+from conftest import OVERLAY_PLATE
 
 from cell_painting_io import read_plate
 
@@ -37,8 +38,12 @@ def test_labels_carry_cellprofiler_object_numbers(sdata: sd.SpatialData) -> None
 
 
 def test_cytoplasm_is_cells_minus_nuclei(sdata: sd.SpatialData) -> None:
+    cells = sdata[f"{PLATE}_A01_s1_cells"].to_numpy()
+    nuclei = sdata[f"{PLATE}_A01_s1_nuclei"].to_numpy()
     cytoplasm = sdata[f"{PLATE}_A01_s1_cytoplasm"].to_numpy()
-    assert not cytoplasm.any()
+
+    assert np.array_equal(cytoplasm, np.where(nuclei > 0, 0, cells))
+    assert cytoplasm.any()
 
 
 def test_tables_annotate_their_elements(sdata: sd.SpatialData) -> None:
@@ -80,3 +85,21 @@ def test_two_plates_concatenate(sdata: sd.SpatialData, gallery: Path) -> None:
     assert merged.tables["wells"].n_obs == 768
     assert merged.tables["cells"].n_obs == 8
     assert set(merged.coordinate_systems) >= {PLATE, OTHER}
+
+
+def test_outlines_drawn_in_colour_over_the_image(gallery: Path) -> None:
+    """The second plate publishes an overlay, and its cell image carries the nuclei outlines in a second colour."""
+    sdata = read_plate(gallery, BATCH, OVERLAY_PLATE, profile="test")
+
+    for kind in ("cells", "nuclei"):
+        mask = sdata[f"{OVERLAY_PLATE}_A01_s1_{kind}"].to_numpy()
+        assert set(np.unique(mask)) == {0, 1, 2}
+    cells = sdata[f"{OVERLAY_PLATE}_A01_s1_cells"].to_numpy()
+    nuclei = sdata[f"{OVERLAY_PLATE}_A01_s1_nuclei"].to_numpy()
+    assert (cells == 1).sum() > (nuclei == 1).sum()
+    assert ((nuclei == 1) & (cells == 1)).sum() == (nuclei == 1).sum()
+
+
+def test_channels_ignore_illumination_columns(sdata: sd.SpatialData) -> None:
+    image = sdata[f"{PLATE}_A01_s1_image"]["scale0"]["image"]
+    assert list(image.coords["c"].to_numpy()) == ["DNA", "RNA"]

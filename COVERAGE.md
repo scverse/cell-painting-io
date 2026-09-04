@@ -35,12 +35,14 @@ The remaining exclusions are structural: the accession publishes no profiles, du
 | `cpg0017-rohban-pathways` | `notebooks/anndata/rohban.ipynb` | 12 MB | Gene identity outranks plate |
 | `cpg0017-rohban-pathways` | `notebooks/spatialdata/rohban.ipynb` | one well | No stage coordinates, so fields only |
 | `cpg0020-varchamp` | `notebooks/anndata/varchamp.ipynb` | ~90 MB | 20 duplicated plate/well rows |
+| `cpg0020-varchamp` | `notebooks/spatialdata/varchamp.ipynb` | one well | Outlines drawn in colour, two object types in one image |
 | `cpg0021-periscope` | `notebooks/anndata/periscope.ipynb` | 216 MB | Pooled optical screen; **an observation is a gene**, one gene-level file of 402 GB |
 | `cpg0022-cmqtl` | `notebooks/anndata/cmqtl.ipynb` | ~300 MB | iPSC lines |
 | `cpg0022-cmqtl` | `notebooks/spatialdata/cmqtl.ipynb` | one well | Profile is an uncompressed CSV |
 | `cpg0024-bortezomib` | `notebooks/anndata/bortezomib.ipynb` | 75 MB | Parquet, unnormalized, scaled before PCA |
 | `cpg0024-bortezomib` | `notebooks/spatialdata/bortezomib.ipynb` | one well | No stage coordinates |
 | `cpg0026-lacoste_haghighi-rare-diseases` | `notebooks/anndata/rare_diseases.ipynb` | 91 MB | `population_profiles/`; cancer mutations batch |
+| `cpg0026-lacoste_haghighi-rare-diseases` | `notebooks/spatialdata/rare_diseases.ipynb` | one well | Colour outlines; no well-level profile published |
 | `cpg0028-kelley-resistance` | `notebooks/anndata/kelley.ipynb` | 809 MB | `backend/` CSVs; duplicated plate/well rows |
 | `cpg0028-kelley-resistance` | *(no spatialdata notebook)* | — | `load_data.csv` gives `Metadata_Row`/`Col` transposed against the well names its own analysis directories use, so the well of a field cannot be read off it |
 | `cpg0029-chroma-pilot` | `notebooks/anndata/chroma.ipynb` | 7.7 MB | Dye sets differ per batch |
@@ -60,6 +62,7 @@ The remaining exclusions are structural: the accession publishes no profiles, du
 | `cpg0038-tegtmeyer-neuropainting` | `notebooks/spatialdata/neuropainting.ipynb` | one well | z stacks, so `plane` picks one |
 | `cpg0039-garcia-fossa-livecellpainting` | `notebooks/anndata/garcia_fossa_live.ipynb` | 6.1 MB | Live Cell Painting |
 | `cpg0040-garcia-fossa-AgNP` | `notebooks/anndata/garcia_fossa_agnp.ipynb` | 288 KB | Nanoparticle size, dose, time |
+| `cpg0040-garcia-fossa-AgNP` | `notebooks/spatialdata/garcia_fossa_agnp.ipynb` | one well | Two channels named without `Orig`; colour outlines |
 | `cpg0047-amish` | `notebooks/anndata/amish.ipynb` | 1.2 MB | Cell line, density, timepoint |
 | `cpg0047-amish` | `notebooks/spatialdata/amish.ipynb` | one well | Images and segmentations |
 

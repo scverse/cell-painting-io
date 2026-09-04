@@ -53,7 +53,7 @@ Elements carry the plate barcode in their names, so two plates concatenate.
 Where the source recorded stage coordinates and the pixel size to convert them with, every element sits in a field, a well and a plate coordinate system, so the fields of a well lay out as a mosaic and the wells as a plate map.
 Where it did not, each field can only sit in its own frame, and `read_plate` degrades to that rather than inventing a layout.
 
-The gallery publishes one-pixel object outlines rather than segmentation masks, so the Labels are reconstructed from them, keeping CellProfiler's object numbers so the per-object tables join onto them.
+The gallery publishes one-pixel object outlines rather than segmentation masks, sometimes on their own and sometimes drawn in colour over the image, so the Labels are reconstructed from them, keeping CellProfiler's object numbers so the per-object tables join onto them.
 A component is only accepted when exactly one object centroid falls in it and its area is close to the area CellProfiler measured, so every label stands for one object rather than for a guess.
 
 `notebooks/spatialdata/fetch.py` downloads one well of one plate, which is what each notebook works from.
@@ -71,14 +71,17 @@ Every accession below reads with the same two lines; the last column is the one 
 | `jump_source1` | `cpg0016-jump` | 1536-well plate |
 | `jump` | `cpg0016-jump` | Profile is `{plate}.parquet` |
 | `rohban` | `cpg0017-rohban-pathways` | No stage coordinates, so fields only |
+| `varchamp` | `cpg0020-varchamp` | Outlines drawn in colour, two object types in one image |
 | `cmqtl` | `cpg0022-cmqtl` | Profile is an uncompressed CSV |
 | `bortezomib` | `cpg0024-bortezomib` | No stage coordinates |
 | `dactyloscopy` | `cpg0025-dactyloscopy` | 2160x2160 fields; outlines carry a singleton axis |
+| `rare_diseases` | `cpg0026-lacoste_haghighi-rare-diseases` | Colour outlines; no well-level profile published |
 | `chroma` | `cpg0029-chroma-pilot` | Eight channels; images named by `FileName_`/`PathName_` |
 | `caicedo_cmvip` | `cpg0031-caicedo-cmvip` | Lower-case wells; no stage coordinates |
 | `oasis_pilot` | `cpg0033-oasis-pilot` |  |
 | `oasis` | `cpg0037-oasis` | Stage coordinates but no pixel size, so fields only |
 | `neuropainting` | `cpg0038-tegtmeyer-neuropainting` | z stacks, so `plane` picks one |
+| `garcia_fossa_agnp` | `cpg0040-garcia-fossa-AgNP` | Two channels named without `Orig`; colour outlines |
 | `amish` | `cpg0047-amish` |  |
 
 ## Environment

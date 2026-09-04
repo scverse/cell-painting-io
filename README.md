@@ -54,6 +54,17 @@ The gallery publishes one-pixel object outlines rather than segmentation masks, 
 
 `notebooks/cpjump1_to_spatialdata.ipynb` runs it on two wells of two JUMP pilot plates, roughly 700 MB against the tens of terabytes of images for that accession.
 
+## CellProfiler exports
+
+`cell_painting_io.read_cellprofiler_export` reads one plate folder written by the `ExportForSpatialData` CellProfiler module, which exports images, segmentation masks and the per-cell table straight out of a pipeline run.
+Nothing is reconstructed, unlike the gallery path: the module writes real label arrays rather than outlines, and a per-cell table already joined across compartments.
+The reader builds Images, Labels and a `cells` Table from the manifest the module puts in the table's `uns`, so it never walks the folder or parses a file name, and a folder that was moved still reads.
+Arrays the module recorded as failed are skipped, along with the rows that annotate them.
+`cellprofiler_export_plates` lists the plate folders of one run, for a run that covered several plates.
+
+The module does not export stage coordinates yet, so each element sits in its own field-of-view coordinate system and the fields are not placed relative to each other.
+Element names are the exporter's own and do not yet match the `{plate}_{well}_s{site}_cells` names `read_plate` uses. Reconciling the two conventions is still open.
+
 ## Environment
 
 ```bash

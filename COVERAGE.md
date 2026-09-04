@@ -92,3 +92,17 @@ Annotation tables are read from each study's GitHub repository rather than the I
 
 `idr0093-mueller-perturbation` publishes ~380 per-well features, but under its own naming (`nuclei_area_mean`, `frac_G1`) rather than CellProfiler's, and it is an EU/nascent-RNA assay rather than Cell Painting, so it is out of scope.
 Detection here keys on CellProfiler naming, so features published under another convention would be missed.
+
+
+## BioImage Archive
+
+The [BioImage Archive](https://www.ebi.ac.uk/bioimage-archive/) hosts raw Cell Painting images, and a few studies also deposit the CellProfiler feature tables.
+Where those tables appear nowhere else — no gallery accession, no Zenodo record — the study is covered here.
+Candidates were found by searching the BioImages collection for the Cell Painting assay and walking each study's public file tree for well- or object-level `.parquet` / `.csv` matrices.
+
+| Accession | What it publishes | Status |
+| --- | --- | --- |
+| `S-BIAD2254` | 3D colorectal-spheroid Cell Painting (HCT116, HT29), per-well and per-object profiles plus optically-cleared z-stacks | `notebooks/spheroid_3d_to_anndata.ipynb` |
+| `S-BIAD2262` | EUbOPEN compounds Cell Painting, per-plate well profiles plus images | Profiles duplicate `notebooks/eubopen_to_anndata.ipynb`, the Zenodo deposit of the same Servier U2OS screen |
+| `S-BIAD1094` | EUbOPEN Wave 1 compounds Cell Painting | Images only, no feature tables |
+| `S-BIAD0847`, `S-BIAD0848`, `S-BIAD0851`, `S-BIAD0855` | OME-NGFF mirrors of IDR Cell Painting screens | Images only; where features exist they are in the gallery |

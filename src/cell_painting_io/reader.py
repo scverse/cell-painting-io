@@ -59,6 +59,11 @@ def read_profiles(
         raise ValueError("no profile files given")
 
     frames = [_read_frame(path) for path in files]
+    # a file with no rows is read as all-object and would drag the dtypes of the others with it through concat
+    kept = [index for index, frame in enumerate(frames) if len(frame)]
+    if kept and len(kept) < len(frames):
+        files = [files[index] for index in kept]
+        frames = [frames[index] for index in kept]
     if len({tuple(frame.columns) for frame in frames}) > 1:
         if on_column_mismatch == "raise":
             raise ValueError("files disagree on columns; pass on_column_mismatch='intersect' to keep the shared ones")
